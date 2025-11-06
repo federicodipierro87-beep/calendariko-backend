@@ -120,8 +120,8 @@ export class EventController {
 
           // Invia email a tutti i membri del gruppo eccetto il creatore
           const emailPromises = groupMembers
-            .filter(member => member.user_id !== req.user?.userId)
-            .map(async (member) => {
+            .filter((member: any) => member.user_id !== req.user?.userId)
+            .map(async (member: any) => {
               try {
                 await sendEventNotification({
                   to: member.user.email,

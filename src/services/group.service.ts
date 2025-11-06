@@ -140,4 +140,34 @@ export class GroupService {
       }
     });
   }
+
+  static async getGroupMembers(groupId: string) {
+    return await prisma.userGroup.findMany({
+      where: { group_id: groupId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+  }
+
+  static async getUserById(userId: string) {
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        email: true,
+        role: true
+      }
+    });
+  }
 }
