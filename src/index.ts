@@ -22,7 +22,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
-    'https://690cb65aac8b750008be7d3f--zingy-hamster-f25654.netlify.app',
+    'https://zingy-hamster-f25654.netlify.app',
     /https:\/\/.*\.netlify\.app$/
   ],
   credentials: true
