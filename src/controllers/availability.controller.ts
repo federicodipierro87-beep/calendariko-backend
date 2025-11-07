@@ -15,7 +15,7 @@ export class AvailabilityController {
         finalUserId = req.user.userId;
         
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (finalGroupId && !userGroupIds.includes(finalGroupId)) {
           return res.status(403).json({ error: 'Access denied to this group' });
@@ -46,7 +46,7 @@ export class AvailabilityController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(user_id);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (!userGroupIds.includes(group_id)) {
           return res.status(403).json({ error: 'Access denied to this group' });
@@ -81,7 +81,7 @@ export class AvailabilityController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(user_id);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (!userGroupIds.includes(group_id)) {
           return res.status(403).json({ error: 'Access denied to this group' });
@@ -164,7 +164,7 @@ export class AvailabilityController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (!userGroupIds.includes(groupId)) {
           return res.status(403).json({ error: 'Access denied to this group' });

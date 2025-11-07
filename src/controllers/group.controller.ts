@@ -22,7 +22,7 @@ export class GroupController {
       }
 
       const userGroups = await GroupService.getUserGroups(req.user?.userId || '');
-      const isGroupMember = userGroups.some(ug => ug.group_id === id);
+      const isGroupMember = userGroups.some(ug => ug.id === id);
 
       if (req.user?.role !== 'ADMIN' && !isGroupMember) {
         return res.status(403).json({ error: 'Access denied' });

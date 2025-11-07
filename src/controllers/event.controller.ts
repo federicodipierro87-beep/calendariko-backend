@@ -13,7 +13,7 @@ export class EventController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (finalGroupId && !userGroupIds.includes(finalGroupId)) {
           return res.status(403).json({ error: 'Access denied to this group' });
@@ -58,7 +58,7 @@ export class EventController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (event.group_id && !userGroupIds.includes(event.group_id)) {
           return res.status(403).json({ error: 'Access denied to this event' });
@@ -180,7 +180,7 @@ export class EventController {
         }
 
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (event.group_id && !userGroupIds.includes(event.group_id)) {
           return res.status(403).json({ error: 'Access denied to this event' });
@@ -242,7 +242,7 @@ export class EventController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        groupIds = userGroups.map(ug => ug.group_id);
+        groupIds = userGroups.map(ug => ug.id);
       }
 
       const events = await EventService.getUpcomingEvents(
@@ -264,7 +264,7 @@ export class EventController {
 
       if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(req.user.userId);
-        const userGroupIds = userGroups.map(ug => ug.group_id);
+        const userGroupIds = userGroups.map(ug => ug.id);
         
         if (finalGroupId && !userGroupIds.includes(finalGroupId)) {
           return res.status(403).json({ error: 'Access denied to this group' });
