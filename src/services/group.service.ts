@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 export class GroupService {
   static async getAllGroups() {
-    return await prisma.group.findMany({
+    const groups = await prisma.group.findMany({
       include: {
         user_groups: {
           include: {
@@ -27,6 +27,9 @@ export class GroupService {
         }
       }
     });
+    console.log('🔍 getAllGroups result count:', groups.length);
+    console.log('🔍 getAllGroups IDs:', groups.map(g => g.id));
+    return groups;
   }
 
   static async getGroupById(id: string) {
@@ -175,7 +178,7 @@ export class GroupService {
   }
 
   static async getPublicGroups() {
-    return await prisma.group.findMany({
+    const groups = await prisma.group.findMany({
       select: {
         id: true,
         name: true,
@@ -187,5 +190,8 @@ export class GroupService {
         name: 'asc'
       }
     });
+    console.log('🔍 getPublicGroups result count:', groups.length);
+    console.log('🔍 getPublicGroups IDs:', groups.map(g => g.id));
+    return groups;
   }
 }
