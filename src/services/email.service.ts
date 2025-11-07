@@ -1,22 +1,36 @@
 import nodemailer from 'nodemailer';
 
-// Configurazione del transporter (usando Gmail come esempio)
+// Configurazione del transporter con settings più robusti
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER || 'your-email@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'your-app-password'
+  },
+  connectionTimeout: 60000, // 60 seconds
+  greetingTimeout: 30000,   // 30 seconds  
+  socketTimeout: 60000,     // 60 seconds
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
-// Verifica la configurazione email all'avvio
-transporter.verify()
-  .then(() => {
+// Verifica la configurazione email solo se richiesto (non all'avvio)
+export const verifyEmailConfig = async (): Promise<boolean> => {
+  try {
+    await transporter.verify();
     console.log('✅ Server email configurato correttamente');
-  })
-  .catch((error: any) => {
+    return true;
+  } catch (error: any) {
     console.error('❌ Errore configurazione email:', error);
-  });
+    return false;
+  }
+};
 
 interface EventNotificationData {
   to: string;
@@ -30,6 +44,20 @@ interface EventNotificationData {
   creatorName: string;
   notes: string;
 }
+
+// Funzione helper per retry con backoff
+const retryWithBackoff = async (fn: () => Promise<any>, maxRetries: number = 3): Promise<any> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      console.log(`🔄 Tentativo ${i + 1}/${maxRetries} fallito:`, error.message);
+      if (i === maxRetries - 1) throw error;
+      // Wait 2^i seconds before retry
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+    }
+  }
+};
 
 export const sendEventNotification = async (data: EventNotificationData): Promise<void> => {
   const {
@@ -136,11 +164,11 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email inviata a ${to}:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio email a ${to}:`, error);
-    throw error;
+    const info = await retryWithBackoff(() => transporter.sendMail(mailOptions));
+    console.log(`📧 Email inviata a ${to}:`, info.messageId);
+  } catch (error: any) {
+    console.error(`❌ Errore nell'invio email a ${to} dopo ${3} tentativi:`, error.message);
+    // Non lanciare errore per non bloccare il processo
   }
 };
 
