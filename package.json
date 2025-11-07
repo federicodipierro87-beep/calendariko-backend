@@ -10,6 +10,7 @@
     "postinstall": "npx prisma generate",
     "deploy": "npx prisma migrate deploy",
     "seed": "npx ts-node prisma/seed.ts",
+    "clean-duplicates": "npx ts-node src/scripts/clean-duplicates.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "prisma": {
