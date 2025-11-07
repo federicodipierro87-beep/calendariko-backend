@@ -111,40 +111,56 @@ export class EventController {
         created_by: req.user?.userId!
       });
 
-      // Invia notifiche email agli artisti del gruppo (se specificato)
+      // Invia notifiche email agli artisti del gruppo (se specificato) in background
       if (group_id) {
-        try {
-          const groupMembers = await GroupService.getGroupMembers(group_id);
-          const creator = await GroupService.getUserById(req.user?.userId!);
-          const group = await GroupService.getGroupById(group_id);
+        console.log('📧 Configurazione email:', {
+          emailUser: process.env.EMAIL_USER ? '✅ Configurato' : '❌ Mancante',
+          emailPassword: process.env.EMAIL_PASSWORD ? '✅ Configurato' : '❌ Mancante'
+        });
+        
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+          // Esegui invio email in background per non bloccare la risposta
+          setImmediate(async () => {
+            try {
+              console.log('📧 Invio notifiche email ai membri del gruppo...');
+              const groupMembers = await GroupService.getGroupMembers(group_id);
+              const creator = await GroupService.getUserById(req.user?.userId!);
+              const group = await GroupService.getGroupById(group_id);
+              
+              console.log(`📧 Trovati ${groupMembers.length} membri nel gruppo`);
 
-          // Invia email a tutti i membri del gruppo eccetto il creatore
-          const emailPromises = groupMembers
-            .filter((member: any) => member.user_id !== req.user?.userId)
-            .map(async (member: any) => {
-              try {
-                await sendEventNotification({
-                  to: member.user.email,
-                  userName: `${member.user.first_name} ${member.user.last_name}`,
-                  eventTitle: title,
-                  eventDate: date,
-                  eventTime: start_time,
-                  venueName: venue_name,
-                  venueCity: venue_city,
-                  groupName: group?.name || 'Gruppo',
-                  creatorName: `${creator?.first_name} ${creator?.last_name}`,
-                  notes: notes || ''
+              // Invia email a tutti i membri del gruppo eccetto il creatore
+              const emailPromises = groupMembers
+                .filter((member: any) => member.user_id !== req.user?.userId)
+                .map(async (member: any) => {
+                  try {
+                    console.log(`📧 Invio email a ${member.user.email}...`);
+                    await sendEventNotification({
+                      to: member.user.email,
+                      userName: `${member.user.first_name} ${member.user.last_name}`,
+                      eventTitle: title,
+                      eventDate: date,
+                      eventTime: start_time,
+                      venueName: venue_name,
+                      venueCity: venue_city,
+                      groupName: group?.name || 'Gruppo',
+                      creatorName: `${creator?.first_name} ${creator?.last_name}`,
+                      notes: notes || ''
+                    });
+                    console.log(`✅ Email evento inviata a ${member.user.email}`);
+                  } catch (emailError) {
+                    console.error(`❌ Errore invio email a ${member.user.email}:`, emailError);
+                  }
                 });
-                console.log(`✅ Email evento inviata a ${member.user.email}`);
-              } catch (emailError) {
-                console.error(`❌ Errore invio email a ${member.user.email}:`, emailError);
-              }
-            });
 
-          await Promise.allSettled(emailPromises);
-        } catch (emailError) {
-          console.error('❌ Errore nell\'invio notifiche email:', emailError);
-          // Non blocchiamo la creazione dell'evento per errori email
+              await Promise.allSettled(emailPromises);
+              console.log('📧 Invio notifiche email completato');
+            } catch (emailError) {
+              console.error('❌ Errore nell\'invio notifiche email:', emailError);
+            }
+          });
+        } else {
+          console.log('⚠️ Email non configurato - saltando invio notifiche');
         }
       }
 
