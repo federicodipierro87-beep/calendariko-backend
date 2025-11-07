@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
+import { GroupService } from '../services/group.service';
 import { PrismaClient } from '@prisma/client';
 
 export class AuthController {
@@ -131,20 +132,7 @@ export class AuthController {
   static async getPublicGroups(req: Request, res: Response) {
     console.log('🔍 AUTH CONTROLLER - getPublicGroups chiamato!');
     try {
-      const prisma = new PrismaClient();
-      const groups = await prisma.group.findMany({
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          genre: true,
-          description: true
-        },
-        orderBy: {
-          name: 'asc'
-        }
-      });
-
+      const groups = await GroupService.getPublicGroups();
       console.log('🔍 AUTH CONTROLLER - Gruppi trovati:', groups.length);
       res.json(groups);
     } catch (error) {

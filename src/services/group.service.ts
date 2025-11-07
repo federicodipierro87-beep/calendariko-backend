@@ -133,12 +133,15 @@ export class GroupService {
   }
 
   static async getUserGroups(userId: string) {
-    return await prisma.userGroup.findMany({
+    const userGroups = await prisma.userGroup.findMany({
       where: { user_id: userId },
       include: {
         group: true
       }
     });
+    
+    // Return only the unique groups, not the relationship data
+    return userGroups.map(ug => ug.group);
   }
 
   static async getGroupMembers(groupId: string) {
@@ -167,6 +170,21 @@ export class GroupService {
         last_name: true,
         email: true,
         role: true
+      }
+    });
+  }
+
+  static async getPublicGroups() {
+    return await prisma.group.findMany({
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        genre: true,
+        description: true
+      },
+      orderBy: {
+        name: 'asc'
       }
     });
   }
