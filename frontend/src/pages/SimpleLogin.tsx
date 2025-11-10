@@ -86,6 +86,8 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           selectedGroup: selectedGroup
         });
         
+        // Mostra popup di successo più visibile
+        alert('✅ ' + response.message);
         setSuccess(response.message);
         // Pulisce il form e passa alla modalità login
         setFirstName('');
