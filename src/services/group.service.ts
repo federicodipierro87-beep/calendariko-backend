@@ -91,9 +91,38 @@ export class GroupService {
   }
 
   static async deleteGroup(id: string) {
-    return await prisma.group.delete({
-      where: { id }
-    });
+    console.log(`🗑️ Eliminazione gruppo ${id} - Inizio processo cascata`);
+    
+    try {
+      // 1. Elimina tutti gli eventi del gruppo
+      const eventsDeleted = await prisma.event.deleteMany({
+        where: { group_id: id }
+      });
+      console.log(`🗑️ Eliminati ${eventsDeleted.count} eventi`);
+
+      // 2. Elimina tutte le disponibilità del gruppo
+      const availabilitiesDeleted = await prisma.availability.deleteMany({
+        where: { group_id: id }
+      });
+      console.log(`🗑️ Eliminate ${availabilitiesDeleted.count} disponibilità`);
+
+      // 3. Elimina tutte le relazioni user_groups
+      const userGroupsDeleted = await prisma.userGroup.deleteMany({
+        where: { group_id: id }
+      });
+      console.log(`🗑️ Eliminate ${userGroupsDeleted.count} relazioni membri`);
+
+      // 4. Infine elimina il gruppo
+      const deletedGroup = await prisma.group.delete({
+        where: { id }
+      });
+      console.log(`✅ Gruppo ${deletedGroup.name} eliminato con successo`);
+      
+      return deletedGroup;
+    } catch (error) {
+      console.error(`❌ Errore nell'eliminazione del gruppo ${id}:`, error);
+      throw new Error(`Failed to delete group: ${(error as Error).message}`);
+    }
   }
 
   static async addMemberToGroup(groupId: string, userId: string) {
