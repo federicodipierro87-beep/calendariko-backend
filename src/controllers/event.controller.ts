@@ -134,7 +134,7 @@ export class EventController {
                     venueName: event.venue_name,
                     venueCity: event.venue_city || 'Milano',
                     groupName: groupWithMembers.name,
-                    creatorName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName}` : 'Admin',
+                    creatorName: 'Admin',
                     notes: event.notes || 'Nessuna nota aggiuntiva'
                   });
                   console.log(`✅ Email inviata a ${membership.user.email}`);
