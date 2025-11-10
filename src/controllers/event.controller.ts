@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { EventService } from '../services/event.service';
 import { GroupService } from '../services/group.service';
-// import { sendEventNotification } from '../services/email.service'; // Temporaneamente disabilitato
+import { sendEventNotification } from '../services/email.service';
 
 export class EventController {
   static async getAllEvents(req: AuthenticatedRequest, res: Response) {
@@ -111,11 +111,47 @@ export class EventController {
         created_by: req.user?.userId!
       });
 
-      // Email temporaneamente disabilitato per performance
-      if (group_id && false) { // Disabilitato temporaneamente
-        console.log('📧 Email service temporaneamente disabilitato per migliorare performance');
+      // Invio notifiche email se il gruppo è specificato
+      if (group_id) {
+        // Invia email in background per non rallentare la risposta
+        setImmediate(async () => {
+          try {
+            console.log('📧 Invio notifiche email per evento creato...');
+            
+            // Ottieni i membri del gruppo per inviare le email
+            const groupWithMembers = await GroupService.getGroupById(group_id);
+            if (groupWithMembers && groupWithMembers.user_groups) {
+              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              
+              for (const membership of groupWithMembers.user_groups) {
+                try {
+                  await sendEventNotification({
+                    to: membership.user.email,
+                    userName: `${membership.user.first_name} ${membership.user.last_name}`,
+                    eventTitle: event.title,
+                    eventDate: event.date.toLocaleDateString('it-IT'),
+                    eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                    venueName: event.venue_name,
+                    venueCity: event.venue_city || 'Milano',
+                    groupName: groupWithMembers.name,
+                    creatorName: req.user?.firstName ? `${req.user.firstName} ${req.user.lastName}` : 'Admin',
+                    notes: event.notes || 'Nessuna nota aggiuntiva'
+                  });
+                  console.log(`✅ Email inviata a ${membership.user.email}`);
+                } catch (memberEmailError) {
+                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
+                }
+              }
+              console.log('✅ Processo invio notifiche completato');
+            } else {
+              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
+            }
+          } catch (emailError) {
+            console.error('❌ Errore generale invio email:', emailError);
+          }
+        });
       } else {
-        console.log('📧 Email service disabilitato - evento creato senza notifiche');
+        console.log('📧 Nessun gruppo specificato - email non inviate');
       }
 
       res.status(201).json(event);
