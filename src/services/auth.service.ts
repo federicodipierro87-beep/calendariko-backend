@@ -119,20 +119,21 @@ export class AuthService {
       });
     }
 
-    // Invia email di benvenuto
-    try {
-      await sendWelcomeEmail({
-        to: user.email,
-        userName: `${user.first_name} ${user.last_name}`,
-        userEmail: user.email,
-        temporaryPassword: userData.password, // Password originale prima dell'hash
-        isFirstLogin: true
-      });
-      console.log(`✅ Email di benvenuto inviata a ${user.email}`);
-    } catch (emailError) {
-      console.error(`❌ Errore nell'invio email di benvenuto a ${user.email}:`, emailError);
-      // Non blocchiamo la registrazione se l'email fallisce
-    }
+    // Invia email di benvenuto in background per non rallentare la risposta
+    setImmediate(async () => {
+      try {
+        await sendWelcomeEmail({
+          to: user.email,
+          userName: `${user.first_name} ${user.last_name}`,
+          userEmail: user.email,
+          temporaryPassword: userData.password, // Password originale prima dell'hash
+          isFirstLogin: true
+        });
+        console.log(`✅ Email di benvenuto inviata a ${user.email}`);
+      } catch (emailError) {
+        console.error(`❌ Errore nell'invio email di benvenuto a ${user.email}:`, emailError);
+      }
+    });
     
     // Log delle credenziali per debug
     console.log(`📧 Credenziali per ${user.email}:`);
