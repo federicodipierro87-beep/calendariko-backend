@@ -51,23 +51,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         const transformedEvents = eventsData.map((event: any) => ({
           id: event.id,
           title: event.title,
-          date: event.date.split('T')[0], // Estrae solo la data
-          time: event.start_time,
+          date: event.date ? event.date.split('T')[0] : '', // Estrae solo la data con controllo
+          time: event.start_time || '',
           type: event.event_type || 'event',
-          venue: event.venue_name,
-          notes: event.notes,
+          venue: event.venue_name || '',
+          notes: event.notes || '',
           group_id: event.group_id,
           group: event.group,
-          fee: event.fee
+          fee: event.fee || 0
         }));
         
         // Carica gruppi
         const groupsData = await groupsApi.getAll();
+        console.log('🔍 FRONTEND - Groups received:', groupsData.length, groupsData.map((g: any) => g.id));
         setGroups(groupsData);
 
         // Carica gruppi dell'utente corrente per le availability
         if (user.role === 'ARTIST') {
           const userGroupsData = await groupsApi.getUserGroups();
+          console.log('🔍 FRONTEND - User groups received:', userGroupsData.length, userGroupsData.map((g: any) => g.id));
           setUserGroups(userGroupsData);
         }
         
@@ -85,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           .map((avail: any) => ({
             id: `avail-${avail.id}`,
             title: `❌ ${avail.user?.first_name || 'Utente'} - Impegnato`,
-            date: avail.date.split('T')[0],
+            date: avail.date ? avail.date.split('T')[0] : '',
             time: 'Tutto il giorno',
             type: 'availability-busy',
             notes: avail.notes || 'Indisponibile',
@@ -93,10 +95,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             group: avail.group,
             user: avail.user,
             availability_id: avail.id
-          }));
+          }))
+          .filter((avail: any) => avail.date); // Filtra eventi senza data valida
 
-        // Combina eventi e disponibilità
-        setEvents([...transformedEvents, ...transformedAvailability]);
+        // Combina eventi e disponibilità, filtrando quelli senza data
+        setEvents([
+          ...transformedEvents.filter((event: any) => event.date), 
+          ...transformedAvailability
+        ]);
         
       } catch (error) {
         console.error('Errore nel caricamento dei dati:', error);
@@ -117,14 +123,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       const transformedEvents = eventsData.map((event: any) => ({
         id: event.id,
         title: event.title,
-        date: event.date.split('T')[0],
-        time: event.start_time,
+        date: event.date ? event.date.split('T')[0] : '',
+        time: event.start_time || '',
         type: event.event_type || 'event',
-        venue: event.venue_name,
-        notes: event.notes,
+        venue: event.venue_name || '',
+        notes: event.notes || '',
         group_id: event.group_id,
         group: event.group,
-        fee: event.fee
+        fee: event.fee || 0
       }));
 
       // Carica disponibilità
@@ -134,7 +140,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         .map((avail: any) => ({
           id: `avail-${avail.id}`,
           title: `❌ ${avail.user?.first_name || 'Utente'} - Impegnato`,
-          date: avail.date.split('T')[0],
+          date: avail.date ? avail.date.split('T')[0] : '',
           time: 'Tutto il giorno',
           type: 'availability-busy',
           notes: avail.notes || 'Indisponibile',
@@ -142,10 +148,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           group: avail.group,
           user: avail.user,
           availability_id: avail.id
-        }));
+        }))
+        .filter((avail: any) => avail.date); // Filtra gli eventi senza data valida
 
       // Combina eventi e disponibilità
-      setEvents([...transformedEvents, ...transformedAvailability]);
+      setEvents([...transformedEvents.filter((event: any) => event.date), ...transformedAvailability]);
     } catch (error) {
       console.error('Errore nel ricaricamento dei dati:', error);
     }
@@ -189,27 +196,35 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         fee: newEvent.fee ? parseFloat(newEvent.fee) : undefined
       };
 
+      console.log('📤 Creazione evento in corso...', eventData);
       const createdEvent = await eventsApi.create(eventData);
+      console.log('📥 Evento ricevuto dal backend:', createdEvent);
       
-      // Trasforma l'evento per il calendario
+      // Trasforma l'evento per il calendario con controlli null
       const transformedEvent = {
         id: createdEvent.id,
-        title: createdEvent.title,
-        date: createdEvent.date.split('T')[0],
-        time: createdEvent.start_time,
-        type: createdEvent.event_type || 'event',
-        venue: createdEvent.venue_name,
-        notes: createdEvent.notes,
-        group_id: createdEvent.group_id,
+        title: createdEvent.title || newEvent.title,
+        date: createdEvent.date ? createdEvent.date.split('T')[0] : newEvent.date,
+        time: createdEvent.start_time || newEvent.time,
+        type: createdEvent.event_type || newEvent.type || 'event',
+        venue: createdEvent.venue_name || newEvent.venue || '',
+        notes: createdEvent.notes || newEvent.notes || '',
+        group_id: createdEvent.group_id || newEvent.group_id,
         group: createdEvent.group,
-        fee: createdEvent.fee
+        fee: createdEvent.fee || (newEvent.fee ? parseFloat(newEvent.fee) : 0)
       };
       
-      setEvents([...events, transformedEvent]);
-      alert('✅ Evento creato con successo! Le notifiche email sono state inviate ai membri del gruppo.');
+      console.log('✅ Evento trasformato per il calendario:', transformedEvent);
+      setEvents(prevEvents => [...prevEvents, transformedEvent]);
+      
+      // Ricarica i dati per sicurezza
+      setTimeout(() => reloadData(), 500);
+      
+      alert('✅ Evento creato con successo!');
     } catch (error: any) {
-      console.error('Errore nella creazione dell\'evento:', error);
-      alert(`Errore nella creazione dell'evento: ${error.message}`);
+      console.error('❌ Errore nella creazione dell\'evento:', error);
+      const errorMessage = error?.message || 'Errore sconosciuto';
+      alert(`❌ Errore nella creazione dell'evento: ${errorMessage}`);
     }
   };
 
@@ -1053,7 +1068,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 • Ultimo controllo: ${new Date().toLocaleString('it-IT')}
 
 Funzionalità disponibili:
-${emailData.features.map(f => `• ${f}`).join('\n')}
+${emailData.features.map((f: any) => `• ${f}`).join('\n')}
 
 ${emailData.configured ? 'Il sistema di notifiche è completamente operativo!' : 'Configura le credenziali email nel file .env'}`;
                               alert(message);
