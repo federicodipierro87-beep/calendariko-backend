@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import groupRoutes from './routes/groups';
+import groupRoutes from './routes/group.routes';
 import eventRoutes from './routes/events';
 import availabilityRoutes from './routes/availability.routes';
 import emailRoutes from './routes/email.routes';
