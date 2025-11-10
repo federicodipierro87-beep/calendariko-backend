@@ -121,7 +121,7 @@ export const apiCall = async (
 // Funzioni specifiche per le API
 export const groupsApi = {
   getAll: () => apiCall('/groups'),
-  getPublic: () => apiCall('/auth/groups-public'),
+  getPublic: () => apiCall('/auth/public-groups'),
   getUserGroups: () => apiCall('/groups/my-groups'),
   create: (groupData: any) => apiCall('/groups', {
     method: 'POST',
