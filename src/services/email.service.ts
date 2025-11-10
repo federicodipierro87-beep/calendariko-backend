@@ -3,20 +3,21 @@ import nodemailer from 'nodemailer';
 // Configurazione del transporter con settings più robusti
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  port: 465,
+  secure: true, // true for 465 SSL
   auth: {
     user: process.env.EMAIL_USER || 'your-email@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'your-app-password'
   },
-  connectionTimeout: 60000, // 60 seconds
-  greetingTimeout: 30000,   // 30 seconds  
-  socketTimeout: 60000,     // 60 seconds
+  connectionTimeout: 30000, // 30 seconds (ridotto)
+  greetingTimeout: 15000,   // 15 seconds (ridotto) 
+  socketTimeout: 30000,     // 30 seconds (ridotto)
   pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
+  maxConnections: 3,
+  maxMessages: 50,
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3'
   }
 });
 
