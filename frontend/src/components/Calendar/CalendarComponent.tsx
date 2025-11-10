@@ -68,7 +68,7 @@ const CalendarComponent: React.FC<CalendarProps> = ({
   };
 
   const getCalendarEvents = () => {
-    const calendarEvents = [];
+    const calendarEvents: any[] = [];
 
     events.forEach((event) => {
       const startDateTime = new Date(`${event.date}T${event.start_time}`);

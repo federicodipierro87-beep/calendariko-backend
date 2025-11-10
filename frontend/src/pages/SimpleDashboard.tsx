@@ -16,19 +16,20 @@ const SimpleDashboard: React.FC<SimpleDashboardProps> = ({ user }) => {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
-                🎵 Calendariko - {user.role === 'ADMIN' ? 'Admin' : 'Artist'} Dashboard
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center h-auto sm:h-16 py-3 sm:py-0">
+            <div className="flex items-center mb-2 sm:mb-0">
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+                🎵 Calendariko
               </h1>
+              <span className="hidden sm:inline"> - {user.role === 'ADMIN' ? 'Admin' : 'Artist'} Dashboard</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+              <span className="text-sm text-gray-700 order-2 sm:order-1">
                 Welcome, {user.first_name} {user.last_name}
               </span>
               <button
                 onClick={handleLogout}
-                className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md text-sm font-medium text-gray-700"
+                className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-md text-sm font-medium text-gray-700 order-1 sm:order-2 self-end sm:self-auto"
               >
                 Logout
               </button>
@@ -37,11 +38,11 @@ const SimpleDashboard: React.FC<SimpleDashboardProps> = ({ user }) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+        <div className="py-4 sm:py-6">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              <h3 className="text-lg sm:text-xl leading-6 font-medium text-gray-900 mb-4">
                 🎉 Login Successful!
               </h3>
               

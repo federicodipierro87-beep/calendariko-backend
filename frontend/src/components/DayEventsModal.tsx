@@ -41,7 +41,7 @@ interface DayEventsModalProps {
   userGroups: any[];
   users?: any[]; // Lista di tutti gli utenti per admin
   onCreateEvent: (event: Omit<Event, 'id'>) => void;
-  onDeleteEvent: (eventId: string) => void;
+  onDeleteEvent: (eventId: string, eventTitle?: string) => void;
   onCreateAvailability?: (availability: any) => void;
 }
 
@@ -92,7 +92,8 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
     if (newEvent.title && newEvent.time && newEvent.endTime && newEvent.group_id) {
       onCreateEvent({
         ...newEvent,
-        date: selectedDate
+        date: selectedDate,
+        fee: newEvent.fee ? Number(newEvent.fee) : 0
       });
       setNewEvent({
         title: '',
@@ -236,7 +237,7 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                     {/* Pulsante elimina per eventi (solo admin) */}
                     {event.type !== 'availability-busy' && user?.role === 'ADMIN' && (
                       <button
-                        onClick={() => onDeleteEvent(event.id)}
+                        onClick={() => onDeleteEvent(event.id, event.title)}
                         className="text-red-500 hover:text-red-700 ml-2"
                         title="Elimina evento"
                       >

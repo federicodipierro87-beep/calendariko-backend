@@ -1,6 +1,6 @@
 // Utility per gestire le chiamate API con refresh automatico del token
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -139,6 +139,9 @@ export const groupsApi = {
     method: 'POST',
   }),
   leaveGroup: (groupId: string) => apiCall(`/groups/${groupId}/leave`, {
+    method: 'DELETE',
+  }),
+  delete: (groupId: string) => apiCall(`/groups/${groupId}`, {
     method: 'DELETE',
   }),
 };
