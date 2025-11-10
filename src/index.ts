@@ -69,4 +69,9 @@ app.use('/api/email', emailRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Test configurazione email all'avvio
+  console.log('📧 [STARTUP] Test configurazione email...');
+  console.log('📧 [STARTUP] EMAIL_USER:', process.env.EMAIL_USER ? `configurato (${process.env.EMAIL_USER})` : 'NON configurato');
+  console.log('📧 [STARTUP] EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'configurato' : 'NON configurato');
 });

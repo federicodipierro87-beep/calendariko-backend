@@ -588,10 +588,19 @@ export const sendWelcomeEmail = async (data: WelcomeUserData): Promise<void> => 
   };
 
   try {
+    console.log('📧 [DEBUG] Tentativo invio email di benvenuto...');
+    console.log('📧 [DEBUG] EMAIL_USER:', process.env.EMAIL_USER ? 'configurato' : 'NON configurato');
+    console.log('📧 [DEBUG] EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'configurato' : 'NON configurato');
+    console.log('📧 [DEBUG] Destinatario:', to);
+    console.log('📧 [DEBUG] From:', mailOptions.from);
+    console.log('📧 [DEBUG] Subject:', mailOptions.subject);
+    
     const info = await transporter.sendMail(mailOptions);
-    console.log(`Email di benvenuto inviata a ${to}:`, info.messageId);
+    console.log(`✅ Email di benvenuto inviata con successo a ${to}:`, info.messageId);
+    console.log('✅ [DEBUG] Info completa:', JSON.stringify(info, null, 2));
   } catch (error) {
-    console.error(`Errore nell'invio email di benvenuto a ${to}:`, error);
+    console.error(`❌ Errore nell'invio email di benvenuto a ${to}:`, error);
+    console.error('❌ [DEBUG] Stack trace:', (error as Error).stack);
     throw error;
   }
 };
