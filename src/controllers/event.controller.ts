@@ -213,19 +213,17 @@ export class EventController {
         notes
       });
 
-      // Invio notifiche email se il gruppo è specificato
+      // Invio notifiche email se il gruppo è specificato - COPIA ESATTA DA CREATION
       if (group_id || originalEvent.group_id) {
         // Invia email in background per non rallentare la risposta
         setImmediate(async () => {
           try {
             console.log('📧 Invio notifiche email per evento modificato...');
             
-            const targetGroupId = group_id || originalEvent.group_id;
-            
             // Ottieni i membri del gruppo per inviare le email
-            const groupWithMembers = await GroupService.getGroupById(targetGroupId!);
+            const groupWithMembers = await GroupService.getGroupById(group_id || originalEvent.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
-              console.log(`📧 Invio email di modifica a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
               
               for (const membership of groupWithMembers.user_groups) {
                 try {
@@ -241,17 +239,17 @@ export class EventController {
                     creatorName: 'Admin',
                     notes: `Evento modificato dall'amministratore. ${updatedEvent.notes || 'Nessuna nota aggiuntiva'}`
                   });
-                  console.log(`✅ Email modifica inviata a ${membership.user.email}`);
+                  console.log(`✅ Email inviata a ${membership.user.email}`);
                 } catch (memberEmailError) {
-                  console.error(`❌ Errore invio email modifica a ${membership.user.email}:`, memberEmailError);
+                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
                 }
               }
-              console.log('✅ Processo invio notifiche modifica completato');
+              console.log('✅ Processo invio notifiche completato');
             } else {
               console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
             }
           } catch (emailError) {
-            console.error('❌ Errore generale invio email modifica evento:', emailError);
+            console.error('❌ Errore generale invio email:', emailError);
           }
         });
       } else {
@@ -280,7 +278,7 @@ export class EventController {
         }
       }
 
-      // Invio notifiche email se il gruppo è specificato (prima di eliminare)
+      // Invio notifiche email se il gruppo è specificato - COPIA ESATTA DA CREATION
       if (eventToDelete.group_id) {
         // Invia email in background per non rallentare la risposta
         setImmediate(async () => {
@@ -290,7 +288,7 @@ export class EventController {
             // Ottieni i membri del gruppo per inviare le email
             const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
-              console.log(`📧 Invio email di cancellazione a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
               
               for (const membership of groupWithMembers.user_groups) {
                 try {
@@ -306,17 +304,17 @@ export class EventController {
                     creatorName: 'Admin',
                     notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.'
                   });
-                  console.log(`✅ Email cancellazione inviata a ${membership.user.email}`);
+                  console.log(`✅ Email inviata a ${membership.user.email}`);
                 } catch (memberEmailError) {
-                  console.error(`❌ Errore invio email cancellazione a ${membership.user.email}:`, memberEmailError);
+                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
                 }
               }
-              console.log('✅ Processo invio notifiche cancellazione completato');
+              console.log('✅ Processo invio notifiche completato');
             } else {
               console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
             }
           } catch (emailError) {
-            console.error('❌ Errore generale invio email cancellazione evento:', emailError);
+            console.error('❌ Errore generale invio email:', emailError);
           }
         });
       } else {
