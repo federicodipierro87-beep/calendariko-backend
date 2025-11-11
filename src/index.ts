@@ -71,7 +71,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   
   // Test configurazione email all'avvio
-  console.log('📧 [STARTUP] Test configurazione email...');
-  console.log('📧 [STARTUP] EMAIL_USER:', process.env.EMAIL_USER ? `configurato (${process.env.EMAIL_USER})` : 'NON configurato');
-  console.log('📧 [STARTUP] EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'configurato' : 'NON configurato');
+  console.log('📧 [STARTUP] Test configurazione Resend...');
+  console.log('📧 [STARTUP] RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'configurato' : 'usando fallback embedded');
+  console.log('📧 [STARTUP] Provider: Resend (rimosso SMTP per compatibilità Railway)');
 });

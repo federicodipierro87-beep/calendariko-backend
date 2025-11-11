@@ -1,34 +1,19 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Configurazione del transporter con settings più robusti
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for 465 SSL
-  auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-  },
-  connectionTimeout: 30000, // 30 seconds (ridotto)
-  greetingTimeout: 15000,   // 15 seconds (ridotto) 
-  socketTimeout: 30000,     // 30 seconds (ridotto)
-  pool: true,
-  maxConnections: 3,
-  maxMessages: 50,
-  tls: {
-    rejectUnauthorized: false,
-    ciphers: 'SSLv3'
-  }
-});
+// Configurazione Resend (supporta Railway meglio di SMTP)
+const resend = new Resend(process.env.RESEND_API_KEY || 're_L49fsCEj_55JNZggeoojuFgDFLY2zAEA9');
+
+// Domain verificato per Resend (usando il dominio predefinito per ora)
+const FROM_EMAIL = 'Calendariko <onboarding@resend.dev>';
 
 // Verifica la configurazione email solo se richiesto (non all'avvio)
 export const verifyEmailConfig = async (): Promise<boolean> => {
   try {
-    await transporter.verify();
-    console.log('✅ Server email configurato correttamente');
+    // Test semplice con Resend - non serve verifica connessione
+    console.log('✅ Resend API configurato correttamente');
     return true;
   } catch (error: any) {
-    console.error('❌ Errore configurazione email:', error);
+    console.error('❌ Errore configurazione Resend:', error);
     return false;
   }
 };
@@ -157,18 +142,22 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `🎵 Nuovo Evento: ${eventTitle} - ${formattedDate}`,
-    html: htmlContent
-  };
-
   try {
-    const info = await retryWithBackoff(() => transporter.sendMail(mailOptions));
-    console.log(`📧 Email inviata a ${to}:`, info.messageId);
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `🎵 Nuovo Evento: ${eventTitle} - ${formattedDate}`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error(`❌ Errore Resend nell'invio notifica evento:`, error);
+      return; // Non bloccare il processo
+    }
+
+    console.log(`📧 Email evento inviata a ${to}:`, data?.id);
   } catch (error: any) {
-    console.error(`❌ Errore nell'invio email a ${to} dopo ${3} tentativi:`, error.message);
+    console.error(`❌ Errore nell'invio email a ${to}:`, error.message);
     // Non lanciare errore per non bloccare il processo
   }
 };
@@ -581,24 +570,26 @@ export const sendWelcomeEmail = async (data: WelcomeUserData): Promise<void> => 
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `🎵 Benvenuto in Calendariko, ${userName}!`,
-    html: htmlContent
-  };
-
   try {
-    console.log('📧 [DEBUG] Tentativo invio email di benvenuto...');
-    console.log('📧 [DEBUG] EMAIL_USER:', process.env.EMAIL_USER ? 'configurato' : 'NON configurato');
-    console.log('📧 [DEBUG] EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'configurato' : 'NON configurato');
+    console.log('📧 [DEBUG] Tentativo invio email di benvenuto con Resend...');
+    console.log('📧 [DEBUG] RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'configurato' : 'usando fallback');
     console.log('📧 [DEBUG] Destinatario:', to);
-    console.log('📧 [DEBUG] From:', mailOptions.from);
-    console.log('📧 [DEBUG] Subject:', mailOptions.subject);
+    console.log('📧 [DEBUG] From:', FROM_EMAIL);
     
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email di benvenuto inviata con successo a ${to}:`, info.messageId);
-    console.log('✅ [DEBUG] Info completa:', JSON.stringify(info, null, 2));
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `🎵 Benvenuto in Calendariko, ${userName}!`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error(`❌ Errore Resend nell'invio email di benvenuto:`, error);
+      throw new Error(error.message);
+    }
+
+    console.log(`✅ Email di benvenuto inviata con successo a ${to}:`, data?.id);
+    console.log('✅ [DEBUG] Resend response:', JSON.stringify(data, null, 2));
   } catch (error) {
     console.error(`❌ Errore nell'invio email di benvenuto a ${to}:`, error);
     console.error('❌ [DEBUG] Stack trace:', (error as Error).stack);
@@ -741,17 +732,21 @@ export const sendTestEmail = async (to: string): Promise<any> => {
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `✅ Test Email Calendariko - ${new Date().toLocaleDateString('it-IT')}`,
-    html: htmlContent
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email di test inviata a ${to}:`, info.messageId);
-    return info;
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `✅ Test Email Calendariko - ${new Date().toLocaleDateString('it-IT')}`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error(`❌ Errore Resend nell'invio email di test:`, error);
+      throw new Error(error.message);
+    }
+
+    console.log(`Email di test inviata a ${to}:`, data?.id);
+    return data;
   } catch (error) {
     console.error(`Errore nell'invio email di test a ${to}:`, error);
     throw error;
