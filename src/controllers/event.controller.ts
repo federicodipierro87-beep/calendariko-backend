@@ -283,12 +283,16 @@ export class EventController {
         // Invia email in background per non rallentare la risposta
         setImmediate(async () => {
           try {
-            console.log('📧 Invio notifiche email per evento cancellato...');
+            console.log('📧 Invio notifiche email per evento cancellato...', {
+              eventTitle: eventToDelete.title,
+              groupId: eventToDelete.group_id
+            });
             
             // Ottieni i membri del gruppo per inviare le email
             const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
               console.log(`📧 Invio email di cancellazione a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              console.log('📧 Email destinatari:', groupWithMembers.user_groups.map(m => m.user.email));
               
               // Importa la funzione di notifica cancellazione evento
               const { sendEventDeletionNotification } = await import('../services/email.service');
@@ -307,7 +311,7 @@ export class EventController {
                 adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
               });
               
-              console.log('✅ Processo invio notifiche cancellazione evento completato');
+              console.log('✅ Processo invio notifiche cancellazione evento completato per:', memberEmails.join(', '));
             } else {
               console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
             }
