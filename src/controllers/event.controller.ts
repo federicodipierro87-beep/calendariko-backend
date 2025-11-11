@@ -215,40 +215,37 @@ export class EventController {
 
       // Invio notifiche email se il gruppo è specificato
       if (group_id || originalEvent.group_id) {
-        // Invia email in background per non rallentare la risposta
-        setImmediate(async () => {
-          try {
-            console.log('📧 Invio notifiche email per evento modificato...');
+        try {
+          console.log('📧 Invio notifiche email per evento modificato...');
+          
+          const targetGroupId = group_id || originalEvent.group_id;
+          
+          // Ottieni i membri del gruppo per inviare le email
+          const groupWithMembers = await GroupService.getGroupById(targetGroupId!);
+          if (groupWithMembers && groupWithMembers.user_groups) {
+            console.log(`📧 Invio email di modifica a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
             
-            const targetGroupId = group_id || originalEvent.group_id;
+            const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
             
-            // Ottieni i membri del gruppo per inviare le email
-            const groupWithMembers = await GroupService.getGroupById(targetGroupId!);
-            if (groupWithMembers && groupWithMembers.user_groups) {
-              console.log(`📧 Invio email di modifica a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
-              
-              const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
-              
-              await sendEventModificationNotification({
-                to: memberEmails,
-                userName: 'Membri del gruppo',
-                eventTitle: updatedEvent.title,
-                eventDate: updatedEvent.date.toISOString(),
-                groupName: groupWithMembers.name,
-                modificationType: 'title', // Generalizzato per qualsiasi modifica
-                oldValue: originalEvent.title,
-                newValue: updatedEvent.title,
-                adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
-              });
-              
-              console.log('✅ Processo invio notifiche modifica evento completato');
-            } else {
-              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
-            }
-          } catch (emailError) {
-            console.error('❌ Errore generale invio email modifica evento:', emailError);
+            await sendEventModificationNotification({
+              to: memberEmails,
+              userName: 'Membri del gruppo',
+              eventTitle: updatedEvent.title,
+              eventDate: typeof updatedEvent.date === 'string' ? updatedEvent.date : updatedEvent.date.toISOString(),
+              groupName: groupWithMembers.name,
+              modificationType: 'title', // Generalizzato per qualsiasi modifica
+              oldValue: originalEvent.title,
+              newValue: updatedEvent.title,
+              adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
+            });
+            
+            console.log('✅ Processo invio notifiche modifica evento completato');
+          } else {
+            console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
           }
-        });
+        } catch (emailError) {
+          console.error('❌ Errore generale invio email modifica evento:', emailError);
+        }
       } else {
         console.log('📧 Nessun gruppo specificato - email non inviate');
       }
@@ -275,44 +272,42 @@ export class EventController {
         }
       }
 
-      // Invio notifiche email se il gruppo è specificato
+      // Invio notifiche email se il gruppo è specificato (prima di eliminare)
       if (eventToDelete.group_id) {
-        // Invia email in background per non rallentare la risposta
-        setImmediate(async () => {
-          try {
-            console.log('📧 Invio notifiche email per evento cancellato...', {
+        try {
+          console.log('📧 Invio notifiche email per evento cancellato...', {
+            eventTitle: eventToDelete.title,
+            groupId: eventToDelete.group_id
+          });
+          
+          // Ottieni i membri del gruppo per inviare le email
+          const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
+          if (groupWithMembers && groupWithMembers.user_groups) {
+            console.log(`📧 Invio email di cancellazione a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+            console.log('📧 Email destinatari:', groupWithMembers.user_groups.map(m => m.user.email));
+            
+            const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
+            
+            await sendEventDeletionNotification({
+              to: memberEmails,
+              userName: 'Membri del gruppo',
               eventTitle: eventToDelete.title,
-              groupId: eventToDelete.group_id
+              eventDate: typeof eventToDelete.date === 'string' ? eventToDelete.date : eventToDelete.date.toISOString(),
+              eventTime: typeof eventToDelete.start_time === 'string' ? eventToDelete.start_time : eventToDelete.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+              venueName: eventToDelete.venue_name,
+              groupName: groupWithMembers.name,
+              deletionReason: 'Evento cancellato dall\'amministratore',
+              adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
             });
             
-            // Ottieni i membri del gruppo per inviare le email
-            const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
-            if (groupWithMembers && groupWithMembers.user_groups) {
-              console.log(`📧 Invio email di cancellazione a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
-              console.log('📧 Email destinatari:', groupWithMembers.user_groups.map(m => m.user.email));
-              
-              const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
-              
-              await sendEventDeletionNotification({
-                to: memberEmails,
-                userName: 'Membri del gruppo',
-                eventTitle: eventToDelete.title,
-                eventDate: typeof eventToDelete.date === 'string' ? eventToDelete.date : eventToDelete.date.toISOString(),
-                eventTime: typeof eventToDelete.start_time === 'string' ? eventToDelete.start_time : eventToDelete.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-                venueName: eventToDelete.venue_name,
-                groupName: groupWithMembers.name,
-                deletionReason: 'Evento cancellato dall\'amministratore',
-                adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
-              });
-              
-              console.log('✅ Processo invio notifiche cancellazione evento completato per:', memberEmails.join(', '));
-            } else {
-              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
-            }
-          } catch (emailError) {
-            console.error('❌ Errore generale invio email cancellazione evento:', emailError);
+            console.log('✅ Processo invio notifiche cancellazione evento completato per:', memberEmails.join(', '));
+          } else {
+            console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
           }
-        });
+        } catch (emailError) {
+          console.error('❌ Errore generale invio email cancellazione evento:', emailError);
+          // Non bloccare l'eliminazione anche se l'email fallisce
+        }
       } else {
         console.log('📧 Nessun gruppo specificato - email non inviate');
       }
