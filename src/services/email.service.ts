@@ -31,17 +31,26 @@ interface EventNotificationData {
   notes: string;
 }
 
-// Funzione helper per retry con backoff
-const retryWithBackoff = async (fn: () => Promise<any>, maxRetries: number = 3): Promise<any> => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      console.log(`🔄 Tentativo ${i + 1}/${maxRetries} fallito:`, error.message);
-      if (i === maxRetries - 1) throw error;
-      // Wait 2^i seconds before retry
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+// Helper per pattern standardizzato Resend
+const sendResendEmail = async (to: string | string[], subject: string, html: string, errorContext: string) => {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error(`❌ Errore Resend ${errorContext}:`, error);
+      throw new Error(error.message);
     }
+
+    console.log(`✅ ${errorContext} inviata a ${Array.isArray(to) ? to.length + ' destinatari' : to}:`, data?.id);
+    return data;
+  } catch (error) {
+    console.error(`❌ Errore nell'invio ${errorContext}:`, error);
+    throw error;
   }
 };
 
@@ -251,16 +260,20 @@ export const sendAvailabilityRequest = async (data: AvailabilityRequestData): Pr
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `📅 Richiesta Disponibilità: ${eventTitle} - ${formattedDate}`,
-    html: htmlContent
-  };
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Richiesta disponibilità inviata a ${to}:`, info.messageId);
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `📅 Richiesta Disponibilità: ${eventTitle} - ${formattedDate}`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error(`❌ Errore Resend richiesta disponibilità:`, error);
+      throw new Error(error.message);
+    }
+
+    console.log(`Richiesta disponibilità inviata a ${to}:`, data?.id);
   } catch (error) {
     console.error(`Errore nell'invio richiesta disponibilità a ${to}:`, error);
     throw error;
@@ -324,20 +337,7 @@ export const sendUnavailabilityNotification = async (data: UnavailabilityNotific
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `❌ Notifica Indisponibilità: ${userName} - ${formattedDate}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Notifica indisponibilità inviata a ${to.length} destinatari:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio notifica indisponibilità:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `❌ Notifica Indisponibilità: ${userName} - ${formattedDate}`, htmlContent, 'Notifica indisponibilità');
 };
 
 // Funzione per inviare promemoria evento
@@ -400,20 +400,7 @@ export const sendEventReminder = async (data: EventReminderData): Promise<void> 
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `⏰ Promemoria: ${eventTitle} - ${formattedDate}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Promemoria evento inviato a ${to}:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio promemoria a ${to}:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `⏰ Promemoria: ${eventTitle} - ${formattedDate}`, htmlContent, 'Promemoria evento');
 };
 
 // Funzione per inviare email di test
@@ -667,20 +654,7 @@ export const sendGroupModificationNotification = async (data: GroupModificationD
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `🔄 Gruppo Modificato: ${groupName}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Notifica modifica gruppo inviata a ${to.length} destinatari:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio notifica modifica gruppo:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `🔄 Gruppo Modificato: ${groupName}`, htmlContent, 'Notifica modifica gruppo');
 };
 
 export const sendTestEmail = async (to: string): Promise<any> => {
@@ -826,20 +800,7 @@ export const sendEventModificationNotification = async (data: EventModificationD
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `🔄 Evento Modificato: ${eventTitle}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Notifica modifica evento inviata a ${to.length} destinatari:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio notifica modifica evento:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `🔄 Evento Modificato: ${eventTitle}`, htmlContent, 'Notifica modifica evento');
 };
 
 // Funzione per notifica eliminazione evento
@@ -914,20 +875,7 @@ export const sendEventDeletionNotification = async (data: EventDeletionData): Pr
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `❌ Evento Cancellato: ${eventTitle} - ${formattedDate}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Notifica cancellazione evento inviata a ${to.length} destinatari:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio notifica cancellazione evento:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `❌ Evento Cancellato: ${eventTitle} - ${formattedDate}`, htmlContent, 'Notifica cancellazione evento');
 };
 
 // Funzione per invito nuovo membro gruppo
@@ -995,20 +943,7 @@ export const sendGroupInvitationEmail = async (data: GroupInvitationData): Promi
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `🎵 Invito al Gruppo: ${groupName}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Invito gruppo inviato a ${to}:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio invito gruppo a ${to}:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `🎵 Invito al Gruppo: ${groupName}`, htmlContent, 'Invito gruppo');
 };
 
 // Funzione per conferma partecipazione evento
@@ -1087,20 +1022,7 @@ export const sendEventConfirmationNotification = async (data: EventConfirmationD
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `${statusIcon} Risposta Evento: ${userName} - ${eventTitle}`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Notifica conferma evento inviata a ${to.length} destinatari:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio notifica conferma evento:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `${statusIcon} Risposta Evento: ${userName} - ${eventTitle}`, htmlContent, 'Notifica conferma evento');
 };
 
 // Funzione per reset password
@@ -1170,20 +1092,7 @@ export const sendPasswordResetEmail = async (data: PasswordResetData): Promise<v
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `🔐 Reset Password - Calendariko`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email reset password inviata a ${to}:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio email reset password a ${to}:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `🔐 Reset Password - Calendariko`, htmlContent, 'Email reset password');
 };
 
 // Funzione per modifica indisponibilità migliorata
@@ -1294,18 +1203,5 @@ export const sendUnavailabilityModificationNotification = async (data: Unavailab
     </html>
   `;
 
-  const mailOptions = {
-    from: `"Calendariko" <${process.env.EMAIL_USER || 'noreply@calendariko.com'}>`,
-    to: to,
-    subject: `${actionText[modificationType]} - ${userName} (${formattedDate})`,
-    html: htmlContent
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Notifica modifica indisponibilità inviata a ${to.length} destinatari:`, info.messageId);
-  } catch (error) {
-    console.error(`Errore nell'invio notifica modifica indisponibilità:`, error);
-    throw error;
-  }
+  await sendResendEmail(to, `${actionText[modificationType]} - ${userName} (${formattedDate})`, htmlContent, 'Notifica modifica indisponibilità');
 };
