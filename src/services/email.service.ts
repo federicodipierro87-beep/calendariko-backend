@@ -3,8 +3,8 @@ import { Resend } from 'resend';
 // Configurazione Resend (supporta Railway meglio di SMTP)
 const resend = new Resend(process.env.RESEND_API_KEY || 're_L49fsCEj_55JNZggeoojuFgDFLY2zAEA9');
 
-// Domain verificato per Resend (usando il dominio predefinito per ora)
-const FROM_EMAIL = 'Calendariko <onboarding@resend.dev>';
+// Domain verificato per Resend (dominio personalizzato)
+const FROM_EMAIL = 'Calendariko <info@easysolution-dp.com>';
 
 // Verifica la configurazione email solo se richiesto (non all'avvio)
 export const verifyEmailConfig = async (): Promise<boolean> => {
