@@ -266,15 +266,57 @@ export class EventController {
     try {
       const { id } = req.params;
 
-      if (req.user?.role === 'ARTIST') {
-        const event = await EventService.getEventById(id);
-        if (!event) {
-          return res.status(404).json({ error: 'Event not found' });
-        }
+      // Ottieni l'evento prima di eliminarlo per inviare le notifiche email
+      const eventToDelete = await EventService.getEventById(id);
+      if (!eventToDelete) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
 
-        if (event.created_by !== req.user.userId) {
+      if (req.user?.role === 'ARTIST') {
+        if (eventToDelete.created_by !== req.user.userId) {
           return res.status(403).json({ error: 'Only event creator or admin can delete events' });
         }
+      }
+
+      // Invio notifiche email se il gruppo è specificato
+      if (eventToDelete.group_id) {
+        // Invia email in background per non rallentare la risposta
+        setImmediate(async () => {
+          try {
+            console.log('📧 Invio notifiche email per evento cancellato...');
+            
+            // Ottieni i membri del gruppo per inviare le email
+            const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
+            if (groupWithMembers && groupWithMembers.user_groups) {
+              console.log(`📧 Invio email di cancellazione a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              
+              // Importa la funzione di notifica cancellazione evento
+              const { sendEventDeletionNotification } = await import('../services/email.service');
+              
+              const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
+              
+              await sendEventDeletionNotification({
+                to: memberEmails,
+                userName: 'Membri del gruppo',
+                eventTitle: eventToDelete.title,
+                eventDate: eventToDelete.date.toISOString(),
+                eventTime: eventToDelete.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                venueName: eventToDelete.venue_name,
+                groupName: groupWithMembers.name,
+                deletionReason: 'Evento cancellato dall\'amministratore',
+                adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
+              });
+              
+              console.log('✅ Processo invio notifiche cancellazione evento completato');
+            } else {
+              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
+            }
+          } catch (emailError) {
+            console.error('❌ Errore generale invio email cancellazione evento:', emailError);
+          }
+        });
+      } else {
+        console.log('📧 Nessun gruppo specificato - email non inviate');
       }
 
       await EventService.deleteEvent(id);
