@@ -282,13 +282,7 @@ export const sendAvailabilityRequest = async (data: AvailabilityRequestData): Pr
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Richiesta Disponibilità - Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 10px 10px; }
-            .event-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
-            .cta-button { display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            ${getResponsiveEmailCSS('#10b981', '#f0fdf4')}
         </style>
     </head>
     <body>
@@ -303,7 +297,7 @@ export const sendAvailabilityRequest = async (data: AvailabilityRequestData): Pr
                 
                 <p><strong>${adminName}</strong> ha bisogno di confermare la tua disponibilità per il gruppo <strong>${groupName}</strong>.</p>
                 
-                <div class="event-details">
+                <div class="details-box">
                     <h3>📅 Dettagli Evento</h3>
                     <p><strong>🎤 Evento:</strong> ${eventTitle}</p>
                     <p><strong>📅 Data:</strong> ${formattedDate}</p>
@@ -361,12 +355,7 @@ export const sendUnavailabilityNotification = async (data: UnavailabilityNotific
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Notifica Indisponibilità - Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #fef2f2; padding: 30px; border-radius: 0 0 10px 10px; }
-            .unavailability-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            ${getResponsiveEmailCSS('#ef4444', '#fef2f2')}
         </style>
     </head>
     <body>
@@ -379,7 +368,7 @@ export const sendUnavailabilityNotification = async (data: UnavailabilityNotific
             <div class="content">
                 <p><strong>${userName}</strong> ha segnalato una indisponibilità per il gruppo <strong>${groupName}</strong>.</p>
                 
-                <div class="unavailability-details">
+                <div class="details-box">
                     <h3>❌ Dettagli Indisponibilità</h3>
                     <p><strong>👤 Artista:</strong> ${userName}</p>
                     <p><strong>📅 Data:</strong> ${formattedDate}</p>
@@ -421,12 +410,7 @@ export const sendEventReminder = async (data: EventReminderData): Promise<void> 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Promemoria Evento - Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #fffbeb; padding: 30px; border-radius: 0 0 10px 10px; }
-            .reminder-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            ${getResponsiveEmailCSS('#f59e0b', '#fffbeb')}
         </style>
     </head>
     <body>
@@ -441,7 +425,7 @@ export const sendEventReminder = async (data: EventReminderData): Promise<void> 
                 
                 <p>Ti ricordiamo che hai un evento in programma a breve!</p>
                 
-                <div class="reminder-details">
+                <div class="details-box">
                     <h3>⏰ Promemoria</h3>
                     <p><strong>🎤 Evento:</strong> ${eventTitle}</p>
                     <p><strong>📅 Data:</strong> ${formattedDate}</p>
@@ -565,14 +549,11 @@ export const sendWelcomeEmail = async (data: WelcomeUserData): Promise<void> => 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Benvenuto in Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #faf5ff; padding: 30px; border-radius: 0 0 10px 10px; }
-            .welcome-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b5cf6; }
+            ${getResponsiveEmailCSS('#8b5cf6', '#faf5ff')}
             .credentials-box { background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #d1d5db; }
-            .button { display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 15px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            @media only screen and (max-width: 480px) {
+                .credentials-box { padding: 12px; margin: 10px 0; }
+            }
         </style>
     </head>
     <body>
@@ -583,7 +564,7 @@ export const sendWelcomeEmail = async (data: WelcomeUserData): Promise<void> => 
             </div>
             
             <div class="content">
-                <div class="welcome-box">
+                <div class="details-box">
                     <h3>🎉 Ciao ${userName}!</h3>
                     <p>Benvenuto in <strong>Calendariko</strong>, la piattaforma per gestire eventi e disponibilità per band e DJ!</p>
                     
@@ -665,13 +646,11 @@ export const sendGroupModificationNotification = async (data: GroupModificationD
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Modifica Gruppo - Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #ecfeff; padding: 30px; border-radius: 0 0 10px 10px; }
-            .modification-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #06b6d4; }
+            ${getResponsiveEmailCSS('#06b6d4', '#ecfeff')}
             .change-item { background: #f0f9ff; padding: 10px; border-radius: 4px; margin: 10px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            @media only screen and (max-width: 480px) {
+                .change-item { padding: 8px; margin: 6px 0; }
+            }
         </style>
     </head>
     <body>
@@ -684,7 +663,7 @@ export const sendGroupModificationNotification = async (data: GroupModificationD
             <div class="content">
                 <p>Il gruppo <strong>${groupName}</strong> è stato modificato da <strong>${adminName}</strong>.</p>
                 
-                <div class="modification-details">
+                <div class="details-box">
                     <h3>🔄 Dettagli Modifica</h3>
                     
                     <div class="change-item">
@@ -728,12 +707,11 @@ export const sendTestEmail = async (to: string): Promise<any> => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Test Email - Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #eff6ff; padding: 30px; border-radius: 0 0 10px 10px; }
-            .success-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            ${getResponsiveEmailCSS('#3b82f6', '#eff6ff')}
+            .success-box { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #10b981; }
+            @media only screen and (max-width: 480px) {
+                .success-box { padding: 12px; margin: 10px 0; }
+            }
         </style>
     </head>
     <body>
@@ -835,7 +813,7 @@ export const sendEventModificationNotification = async (data: EventModificationD
             <div class="content">
                 <p>L'evento <strong>"${eventTitle}"</strong> è stato modificato da <strong>${adminName}</strong>.</p>
                 
-                <div class="modification-details">
+                <div class="details-box">
                     <h3>🔄 Dettagli Modifica</h3>
                     
                     <p><strong>🎤 Evento:</strong> ${eventTitle}</p>
@@ -888,7 +866,6 @@ export const sendEventDeletionNotification = async (data: EventDeletionData): Pr
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #fef2f2; padding: 30px; border-radius: 0 0 10px 10px; }
-            .deletion-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626; }
             .warning-box { background: #fee2e2; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #fca5a5; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
         </style>
@@ -906,7 +883,7 @@ export const sendEventDeletionNotification = async (data: EventDeletionData): Pr
                     <p>L'evento <strong>"${eventTitle}"</strong> è stato cancellato da <strong>${adminName}</strong>.</p>
                 </div>
                 
-                <div class="deletion-details">
+                <div class="details-box">
                     <h3>❌ Dettagli Evento Cancellato</h3>
                     
                     <p><strong>🎤 Evento:</strong> ${eventTitle}</p>
@@ -956,7 +933,6 @@ export const sendGroupInvitationEmail = async (data: GroupInvitationData): Promi
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 10px 10px; }
-            .invitation-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
             .group-info { background: #ecfdf5; padding: 15px; border-radius: 6px; margin: 15px 0; }
             .cta-button { display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; text-align: center; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
@@ -970,7 +946,7 @@ export const sendGroupInvitationEmail = async (data: GroupInvitationData): Promi
             </div>
             
             <div class="content">
-                <div class="invitation-details">
+                <div class="details-box">
                     <h3>🎉 Hai ricevuto un invito!</h3>
                     <p>Ciao <strong>${userName}</strong>,</p>
                     <p><strong>${inviterName}</strong> ti ha invitato a far parte del gruppo <strong>"${groupName}"</strong> su Calendariko!</p>
@@ -1037,7 +1013,6 @@ export const sendEventConfirmationNotification = async (data: EventConfirmationD
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, ${statusColor} 0%, ${statusColor}dd 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: ${statusBg}; padding: 30px; border-radius: 0 0 10px 10px; }
-            .confirmation-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${statusColor}; }
             .status-box { background: ${statusBg}; padding: 15px; border-radius: 6px; margin: 15px 0; text-align: center; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
         </style>
@@ -1052,7 +1027,7 @@ export const sendEventConfirmationNotification = async (data: EventConfirmationD
             <div class="content">
                 <p><strong>${userName}</strong> ha risposto all'evento <strong>"${eventTitle}"</strong>.</p>
                 
-                <div class="confirmation-details">
+                <div class="details-box">
                     <div class="status-box">
                         <h3>${statusIcon} Partecipazione ${statusText}</h3>
                     </div>
@@ -1103,7 +1078,6 @@ export const sendPasswordResetEmail = async (data: PasswordResetData): Promise<v
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
-            .reset-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6366f1; }
             .reset-button { display: inline-block; background: #6366f1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; text-align: center; font-weight: bold; }
             .warning-box { background: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; border: 1px solid #f59e0b; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
@@ -1117,7 +1091,7 @@ export const sendPasswordResetEmail = async (data: PasswordResetData): Promise<v
             </div>
             
             <div class="content">
-                <div class="reset-details">
+                <div class="details-box">
                     <h3>🔐 Richiesta Reset Password</h3>
                     <p>Ciao <strong>${userName}</strong>,</p>
                     <p>Hai richiesto di reimpostare la password per il tuo account Calendariko.</p>
@@ -1210,7 +1184,7 @@ export const sendUnavailabilityModificationNotification = async (data: Unavailab
                 <h3>${actionText[modificationType]}</h3>
                 <p><strong>${userName}</strong> ha ${modificationType === 'created' ? 'inserito' : modificationType === 'updated' ? 'modificato' : 'rimosso'} una indisponibilità per il gruppo <strong>${groupName}</strong>.</p>
                 
-                <div class="modification-details">
+                <div class="details-box">
                     <div class="change-item">
                         <strong>👤 Artista:</strong> ${userName}
                     </div>
