@@ -27,6 +27,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [userGroups, setUserGroups] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [eventsPerPage] = useState(10);
   const [userProfile, setUserProfile] = useState({
     firstName: user.first_name || '',
     lastName: user.last_name || '',
@@ -425,16 +427,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 >
                   👥 Gruppi
                 </button>
-                <button
-                  onClick={() => handleSectionClick('user')}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    activeSection === 'user'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  👤 Profilo
-                </button>
+                {user.role === 'ADMIN' && (
+                  <button
+                    onClick={() => handleSectionClick('users')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      activeSection === 'users'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    👤 Utenti
+                  </button>
+                )}
                 <button
                   onClick={() => handleSectionClick('events')}
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -445,30 +449,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 >
                   {user.role === 'ADMIN' ? '🎤 Eventi' : '📅 Disponibilità'}
                 </button>
-                {user.role === 'ADMIN' && (
-                  <>
-                    <button
-                      onClick={() => handleSectionClick('users')}
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        activeSection === 'users'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      👤 Utenti
-                    </button>
-                    <button
-                      onClick={() => handleSectionClick('notifications')}
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        activeSection === 'notifications'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      📧 Notifiche
-                    </button>
-                  </>
-                )}
+                <button
+                  onClick={() => handleSectionClick('user')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    activeSection === 'user'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  ⚙️ Profilo
+                </button>
               </nav>
             </div>
           </div>
@@ -793,10 +783,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                               + Crea Nuovo Evento
                             </button>
                             <button 
-                              onClick={() => setShowEventsList(!showEventsList)}
+                              onClick={() => {
+                                setShowEventsList(!showEventsList);
+                                if (showEventsList) setCurrentPage(1); // Reset pagina quando si chiude
+                              }}
                               className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
                             >
-                              {showEventsList ? 'Nascondi Lista' : 'Visualizza Tutti gli Eventi'}
+                              {showEventsList ? 'Nascondi Lista' : 'Visualizza Prossimi Eventi'}
                             </button>
                           </>
                         ) : (
@@ -809,26 +802,60 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                               📅 Gestisci Disponibilità
                             </button>
                             <button 
-                              onClick={() => setShowEventsList(!showEventsList)}
+                              onClick={() => {
+                                setShowEventsList(!showEventsList);
+                                if (showEventsList) setCurrentPage(1); // Reset pagina quando si chiude
+                              }}
                               className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
                             >
-                              {showEventsList ? 'Nascondi Lista' : 'Visualizza I Tuoi Eventi'}
+                              {showEventsList ? 'Nascondi Lista' : 'Visualizza I Tuoi Prossimi Eventi'}
                             </button>
                           </>
                         )}
                       </div>
                       
-                      {showEventsList && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4">
-                          <h5 className="font-medium text-gray-900 mb-3">
-                            {user.role === 'ADMIN' ? 'Lista Completa Eventi' : 'I Tuoi Eventi'}
-                          </h5>
-                          {events.length === 0 ? (
-                            <p className="text-gray-500 text-center py-4">Nessun evento presente</p>
-                          ) : (
-                            <div className="space-y-3 max-h-64 overflow-y-auto">
-                              {events.map(event => (
-                                <div key={event.id} className="border border-gray-100 rounded p-3">
+                      {showEventsList && (() => {
+                        // Filtra solo eventi futuri
+                        const upcomingEvents = events.filter(e => new Date(e.date) >= new Date());
+                        const totalPages = Math.ceil(upcomingEvents.length / eventsPerPage);
+                        const startIndex = (currentPage - 1) * eventsPerPage;
+                        const paginatedEvents = upcomingEvents.slice(startIndex, startIndex + eventsPerPage);
+                        
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <h5 className="font-medium text-gray-900">
+                                {user.role === 'ADMIN' ? 'Prossimi Eventi' : 'I Tuoi Prossimi Eventi'}
+                                <span className="text-sm text-gray-500 ml-2">({upcomingEvents.length} totali)</span>
+                              </h5>
+                              {totalPages > 1 && (
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                  >
+                                    ← Prec
+                                  </button>
+                                  <span className="text-sm text-gray-600">
+                                    {currentPage} di {totalPages}
+                                  </span>
+                                  <button
+                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                  >
+                                    Succ →
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            {upcomingEvents.length === 0 ? (
+                              <p className="text-gray-500 text-center py-4">Nessun evento futuro programmato</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {paginatedEvents.map(event => (
+                                  <div key={event.id} className="border border-gray-100 rounded p-3">
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
@@ -865,7 +892,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             </div>
                           )}
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

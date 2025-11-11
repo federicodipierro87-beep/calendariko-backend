@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { groupsApi, usersApi } from '../utils/api';
+import { groupsApi, usersApi, eventsApi } from '../utils/api';
 
 interface GroupDetailModalProps {
   isOpen: boolean;
@@ -18,8 +18,10 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
 }) => {
   const [members, setMembers] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isUserMember, setIsUserMember] = useState(false);
+  const [activeTab, setActiveTab] = useState('members'); // 'members' or 'events'
 
   useEffect(() => {
     if (isOpen && group) {
@@ -38,6 +40,11 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       // Controlla se l'utente corrente è membro
       const userIsMember = groupMembers.some((member: any) => member.id === currentUser.id);
       setIsUserMember(userIsMember);
+
+      // Carica eventi del gruppo
+      const allEvents = await eventsApi.getAll();
+      const groupEvents = allEvents.filter((event: any) => event.group_id === group.id);
+      setEvents(groupEvents);
 
       // Se admin, carica tutti gli utenti per gestione membri
       if (currentUser.role === 'ADMIN') {
@@ -154,6 +161,32 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
           )}
         </div>
 
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'members'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👥 Membri ({members.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('events')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'events'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🎤 Eventi ({events.length})
+            </button>
+          </div>
+        </div>
+
         {/* Azioni utente */}
         {!canManageMembers && (
           <div className="mb-6">
@@ -178,12 +211,15 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         {loading ? (
           <div className="text-center py-4">Caricamento...</div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Lista membri attuali */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-3">
-                Membri Attuali ({members.length})
-              </h3>
+          <div>
+            {/* Tab Content */}
+            {activeTab === 'members' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Lista membri attuali */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    Membri Attuali ({members.length})
+                  </h3>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {members.length === 0 ? (
                   <div className="bg-gray-50 p-3 rounded text-center text-gray-500">
@@ -242,6 +278,92 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                     ))
                   )}
                 </div>
+              </div>
+            ) : (
+              /* Tab Eventi */
+              <div>
+                {(() => {
+                  const now = new Date();
+                  const pastEvents = events.filter(e => new Date(e.date) < now);
+                  const upcomingEvents = events.filter(e => new Date(e.date) >= now);
+                  
+                  return (
+                    <div className="space-y-6">
+                      {/* Prossimi Eventi */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-3">
+                          🎤 Prossimi Eventi ({upcomingEvents.length})
+                        </h3>
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {upcomingEvents.length === 0 ? (
+                            <div className="bg-gray-50 p-4 rounded text-center text-gray-500">
+                              Nessun evento futuro programmato
+                            </div>
+                          ) : (
+                            upcomingEvents.map(event => (
+                              <div key={event.id} className="bg-green-50 border border-green-200 rounded p-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">{event.title}</h4>
+                                    <p className="text-sm text-gray-600">
+                                      📅 {new Date(event.date).toLocaleDateString('it-IT')} - ⏰ {event.start_time}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      📍 {event.venue_name}, {event.venue_city}
+                                    </p>
+                                    {event.fee && (
+                                      <p className="text-sm text-green-600 font-medium">💰 €{event.fee}</p>
+                                    )}
+                                  </div>
+                                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+                                    {event.status === 'CONFIRMED' ? 'Confermato' : 
+                                     event.status === 'PROPOSED' ? 'Proposto' : event.status}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Eventi Terminati */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-3">
+                          ✅ Eventi Terminati ({pastEvents.length})
+                        </h3>
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {pastEvents.length === 0 ? (
+                            <div className="bg-gray-50 p-4 rounded text-center text-gray-500">
+                              Nessun evento passato
+                            </div>
+                          ) : (
+                            pastEvents.map(event => (
+                              <div key={event.id} className="bg-gray-50 border border-gray-200 rounded p-3 opacity-75">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-medium text-gray-700">{event.title}</h4>
+                                    <p className="text-sm text-gray-500">
+                                      📅 {new Date(event.date).toLocaleDateString('it-IT')} - ⏰ {event.start_time}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      📍 {event.venue_name}, {event.venue_city}
+                                    </p>
+                                    {event.fee && (
+                                      <p className="text-sm text-gray-600">💰 €{event.fee}</p>
+                                    )}
+                                  </div>
+                                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                                    Completato
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
