@@ -31,6 +31,75 @@ interface EventNotificationData {
   notes: string;
 }
 
+// Helper per CSS mobile-responsive comune
+const getResponsiveEmailCSS = (primaryColor: string = '#667eea', backgroundColor: string = '#f8f9fa') => `
+body { 
+    font-family: Arial, sans-serif; 
+    line-height: 1.6; 
+    color: #333; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-text-size-adjust: 100%; 
+    -ms-text-size-adjust: 100%;
+    width: 100% !important;
+    min-width: 100%;
+}
+.container { 
+    max-width: 600px; 
+    width: 100% !important; 
+    margin: 0 auto; 
+    padding: 10px; 
+    box-sizing: border-box;
+}
+.header { 
+    background: linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}dd 100%); 
+    color: white; 
+    padding: 20px 15px; 
+    text-align: center; 
+    border-radius: 10px 10px 0 0; 
+}
+.header h1 { margin: 0 0 10px 0; font-size: 24px; }
+.header h2 { margin: 0; font-size: 18px; font-weight: normal; }
+.content { 
+    background: ${backgroundColor}; 
+    padding: 20px 15px; 
+    border-radius: 0 0 10px 10px; 
+}
+.details-box { 
+    background: white; 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin: 15px 0; 
+    border-left: 4px solid ${primaryColor}; 
+}
+.detail-row { margin: 8px 0; }
+.label { font-weight: bold; color: ${primaryColor}; }
+.footer { text-align: center; margin-top: 20px; color: #666; font-size: 13px; }
+.button { 
+    display: inline-block; 
+    background: ${primaryColor}; 
+    color: white; 
+    padding: 12px 20px; 
+    text-decoration: none; 
+    border-radius: 6px; 
+    margin: 15px 0; 
+    font-weight: bold;
+}
+
+/* Mobile optimizations */
+@media only screen and (max-width: 480px) {
+    .container { padding: 5px !important; }
+    .header { padding: 15px 10px; border-radius: 8px 8px 0 0; }
+    .header h1 { font-size: 20px; }
+    .header h2 { font-size: 16px; }
+    .content { padding: 15px 10px; border-radius: 0 0 8px 8px; }
+    .details-box { padding: 12px; margin: 10px 0; }
+    .detail-row { margin: 6px 0; font-size: 14px; }
+    .footer { font-size: 12px; margin-top: 15px; }
+    .button { padding: 10px 16px; font-size: 14px; }
+}
+`;
+
 // Helper per pattern standardizzato Resend
 const sendResendEmail = async (to: string | string[], subject: string, html: string, errorContext: string) => {
   try {
@@ -83,14 +152,7 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Nuovo Evento - Calendariko</title>
         <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }
-            .event-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
-            .detail-row { margin: 10px 0; }
-            .label { font-weight: bold; color: #667eea; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            ${getResponsiveEmailCSS('#667eea', '#f8f9fa')}
         </style>
     </head>
     <body>
@@ -105,7 +167,7 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
                 
                 <p>Hai ricevuto un nuovo evento da <strong>${creatorName}</strong> per il gruppo <strong>${groupName}</strong>.</p>
                 
-                <div class="event-details">
+                <div class="details-box">
                     <h3>📅 Dettagli Evento</h3>
                     
                     <div class="detail-row">
