@@ -163,6 +163,7 @@ export class EventController {
 
   static async updateEvent(req: AuthenticatedRequest, res: Response) {
     console.log('🔍 updateEvent CALLED with ID:', req.params.id);
+    console.error('🚨 FORCE ERROR LOG - updateEvent called');
     try {
       const { id } = req.params;
       const {
@@ -273,6 +274,7 @@ export class EventController {
 
   static async deleteEvent(req: AuthenticatedRequest, res: Response) {
     console.log('🔍 deleteEvent CALLED with ID:', req.params.id);
+    console.error('🚨 FORCE ERROR LOG - deleteEvent called');
     try {
       const { id } = req.params;
 
