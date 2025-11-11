@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { EventService } from '../services/event.service';
 import { GroupService } from '../services/group.service';
-import { sendEventNotification } from '../services/email.service';
+import { sendEventNotification, sendEventModificationNotification, sendEventDeletionNotification } from '../services/email.service';
 
 export class EventController {
   static async getAllEvents(req: AuthenticatedRequest, res: Response) {
@@ -227,9 +227,6 @@ export class EventController {
             if (groupWithMembers && groupWithMembers.user_groups) {
               console.log(`📧 Invio email di modifica a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
               
-              // Importa la funzione di notifica modifica evento
-              const { sendEventModificationNotification } = await import('../services/email.service');
-              
               const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
               
               await sendEventModificationNotification({
@@ -293,9 +290,6 @@ export class EventController {
             if (groupWithMembers && groupWithMembers.user_groups) {
               console.log(`📧 Invio email di cancellazione a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
               console.log('📧 Email destinatari:', groupWithMembers.user_groups.map(m => m.user.email));
-              
-              // Importa la funzione di notifica cancellazione evento
-              const { sendEventDeletionNotification } = await import('../services/email.service');
               
               const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
               
