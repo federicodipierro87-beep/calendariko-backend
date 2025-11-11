@@ -162,6 +162,7 @@ export class EventController {
   }
 
   static async updateEvent(req: AuthenticatedRequest, res: Response) {
+    console.log('🔍 updateEvent CALLED with ID:', req.params.id);
     try {
       const { id } = req.params;
       const {
@@ -214,9 +215,17 @@ export class EventController {
       });
 
       // Invio notifiche email se il gruppo è specificato - COPIA ESATTA DA CREATION
+      console.log('🔍 EMAIL CHECK:', { 
+        group_id, 
+        originalEventGroupId: originalEvent.group_id,
+        willSendEmail: !!(group_id || originalEvent.group_id)
+      });
+      
       if (group_id || originalEvent.group_id) {
+        console.log('🔍 ENTERING EMAIL BLOCK FOR UPDATE');
         // Invia email in background per non rallentare la risposta
         setImmediate(async () => {
+          console.log('🔍 setImmediate EXECUTED FOR UPDATE');
           try {
             console.log('📧 Invio notifiche email per evento modificato...');
             
@@ -263,6 +272,7 @@ export class EventController {
   }
 
   static async deleteEvent(req: AuthenticatedRequest, res: Response) {
+    console.log('🔍 deleteEvent CALLED with ID:', req.params.id);
     try {
       const { id } = req.params;
 
@@ -279,9 +289,16 @@ export class EventController {
       }
 
       // Invio notifiche email se il gruppo è specificato - COPIA ESATTA DA CREATION
+      console.log('🔍 DELETE EMAIL CHECK:', { 
+        eventToDeleteGroupId: eventToDelete.group_id,
+        willSendEmail: !!eventToDelete.group_id
+      });
+      
       if (eventToDelete.group_id) {
+        console.log('🔍 ENTERING EMAIL BLOCK FOR DELETE');
         // Invia email in background per non rallentare la risposta
         setImmediate(async () => {
+          console.log('🔍 setImmediate EXECUTED FOR DELETE');
           try {
             console.log('📧 Invio notifiche email per evento cancellato...');
             
