@@ -163,7 +163,6 @@ export class EventController {
 
   static async updateEvent(req: AuthenticatedRequest, res: Response) {
     console.log('🔍 updateEvent CALLED with ID:', req.params.id);
-    console.error('🚨 FORCE ERROR LOG - updateEvent called');
     try {
       const { id } = req.params;
       const {
@@ -215,26 +214,17 @@ export class EventController {
         notes
       });
 
-      // Invio notifiche email se il gruppo è specificato - COPIA ESATTA DA CREATION
-      console.log('🔍 EMAIL CHECK:', { 
-        group_id, 
-        originalEventGroupId: originalEvent.group_id,
-        willSendEmail: !!(group_id || originalEvent.group_id)
-      });
+
+      // Invio email DOPO aver risposto al client
+      res.json(updatedEvent);
       
+      // Email inviate dopo la risposta per non bloccare
       if (group_id || originalEvent.group_id) {
-        console.log('🔍 ENTERING EMAIL BLOCK FOR UPDATE');
-        // Invia email in background per non rallentare la risposta
-        setImmediate(async () => {
-          console.log('🔍 setImmediate EXECUTED FOR UPDATE');
+        console.log('📧 Sending modification emails post-response');
+        setTimeout(async () => {
           try {
-            console.log('📧 Invio notifiche email per evento modificato...');
-            
-            // Ottieni i membri del gruppo per inviare le email
             const groupWithMembers = await GroupService.getGroupById(group_id || originalEvent.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
-              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
-              
               for (const membership of groupWithMembers.user_groups) {
                 try {
                   await sendEventNotification({
@@ -249,24 +239,17 @@ export class EventController {
                     creatorName: 'Admin',
                     notes: `Evento modificato dall'amministratore. ${updatedEvent.notes || 'Nessuna nota aggiuntiva'}`
                   });
-                  console.log(`✅ Email inviata a ${membership.user.email}`);
-                } catch (memberEmailError) {
-                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
+                  console.log(`✅ Modification email sent to ${membership.user.email}`);
+                } catch (error) {
+                  console.error('❌ Email error:', error);
                 }
               }
-              console.log('✅ Processo invio notifiche completato');
-            } else {
-              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
             }
-          } catch (emailError) {
-            console.error('❌ Errore generale invio email:', emailError);
+          } catch (error) {
+            console.error('❌ Group fetch error:', error);
           }
-        });
-      } else {
-        console.log('📧 Nessun gruppo specificato - email non inviate');
+        }, 100);
       }
-
-      res.json(updatedEvent);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
@@ -274,7 +257,6 @@ export class EventController {
 
   static async deleteEvent(req: AuthenticatedRequest, res: Response) {
     console.log('🔍 deleteEvent CALLED with ID:', req.params.id);
-    console.error('🚨 FORCE ERROR LOG - deleteEvent called');
     try {
       const { id } = req.params;
 
@@ -290,25 +272,16 @@ export class EventController {
         }
       }
 
-      // Invio notifiche email se il gruppo è specificato - COPIA ESATTA DA CREATION
-      console.log('🔍 DELETE EMAIL CHECK:', { 
-        eventToDeleteGroupId: eventToDelete.group_id,
-        willSendEmail: !!eventToDelete.group_id
-      });
+      await EventService.deleteEvent(id);
+      res.json({ message: 'Event deleted successfully' });
       
+      // Email inviate dopo la risposta per non bloccare
       if (eventToDelete.group_id) {
-        console.log('🔍 ENTERING EMAIL BLOCK FOR DELETE');
-        // Invia email in background per non rallentare la risposta
-        setImmediate(async () => {
-          console.log('🔍 setImmediate EXECUTED FOR DELETE');
+        console.log('📧 Sending deletion emails post-response');
+        setTimeout(async () => {
           try {
-            console.log('📧 Invio notifiche email per evento cancellato...');
-            
-            // Ottieni i membri del gruppo per inviare le email
             const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
-              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
-              
               for (const membership of groupWithMembers.user_groups) {
                 try {
                   await sendEventNotification({
@@ -323,25 +296,17 @@ export class EventController {
                     creatorName: 'Admin',
                     notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.'
                   });
-                  console.log(`✅ Email inviata a ${membership.user.email}`);
-                } catch (memberEmailError) {
-                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
+                  console.log(`✅ Deletion email sent to ${membership.user.email}`);
+                } catch (error) {
+                  console.error('❌ Email error:', error);
                 }
               }
-              console.log('✅ Processo invio notifiche completato');
-            } else {
-              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
             }
-          } catch (emailError) {
-            console.error('❌ Errore generale invio email:', emailError);
+          } catch (error) {
+            console.error('❌ Group fetch error:', error);
           }
-        });
-      } else {
-        console.log('📧 Nessun gruppo specificato - email non inviate');
+        }, 100);
       }
-
-      await EventService.deleteEvent(id);
-      res.json({ message: 'Event deleted successfully' });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
