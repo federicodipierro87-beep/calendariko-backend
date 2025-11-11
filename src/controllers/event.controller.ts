@@ -179,20 +179,21 @@ export class EventController {
         notes
       } = req.body;
 
-      if (req.user?.role === 'ARTIST') {
-        const event = await EventService.getEventById(id);
-        if (!event) {
-          return res.status(404).json({ error: 'Event not found' });
-        }
+      // Ottieni l'evento originale prima della modifica per confrontare le modifiche
+      const originalEvent = await EventService.getEventById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
 
+      if (req.user?.role === 'ARTIST') {
         const userGroups = await GroupService.getUserGroups(req.user.userId);
         const userGroupIds = userGroups.map(ug => ug.id);
         
-        if (event.group_id && !userGroupIds.includes(event.group_id)) {
+        if (originalEvent.group_id && !userGroupIds.includes(originalEvent.group_id)) {
           return res.status(403).json({ error: 'Access denied to this event' });
         }
 
-        if (event.created_by !== req.user.userId) {
+        if (originalEvent.created_by !== req.user.userId) {
           return res.status(403).json({ error: 'Only event creator or admin can modify events' });
         }
       }
@@ -211,6 +212,49 @@ export class EventController {
         status,
         notes
       });
+
+      // Invio notifiche email se il gruppo è specificato
+      if (group_id || originalEvent.group_id) {
+        // Invia email in background per non rallentare la risposta
+        setImmediate(async () => {
+          try {
+            console.log('📧 Invio notifiche email per evento modificato...');
+            
+            const targetGroupId = group_id || originalEvent.group_id;
+            
+            // Ottieni i membri del gruppo per inviare le email
+            const groupWithMembers = await GroupService.getGroupById(targetGroupId!);
+            if (groupWithMembers && groupWithMembers.user_groups) {
+              console.log(`📧 Invio email di modifica a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              
+              // Importa la funzione di notifica modifica evento
+              const { sendEventModificationNotification } = await import('../services/email.service');
+              
+              const memberEmails = groupWithMembers.user_groups.map(membership => membership.user.email);
+              
+              await sendEventModificationNotification({
+                to: memberEmails,
+                userName: 'Membri del gruppo',
+                eventTitle: updatedEvent.title,
+                eventDate: updatedEvent.date.toISOString(),
+                groupName: groupWithMembers.name,
+                modificationType: 'title', // Generalizzato per qualsiasi modifica
+                oldValue: originalEvent.title,
+                newValue: updatedEvent.title,
+                adminName: req.user?.role === 'ADMIN' ? 'Admin' : 'Utente'
+              });
+              
+              console.log('✅ Processo invio notifiche modifica evento completato');
+            } else {
+              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email');
+            }
+          } catch (emailError) {
+            console.error('❌ Errore generale invio email modifica evento:', emailError);
+          }
+        });
+      } else {
+        console.log('📧 Nessun gruppo specificato - email non inviate');
+      }
 
       res.json(updatedEvent);
     } catch (error) {
