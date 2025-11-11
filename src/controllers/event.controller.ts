@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { EventService } from '../services/event.service';
 import { GroupService } from '../services/group.service';
-import { sendEventNotification, sendEventModificationNotification, sendEventDeletionNotification } from '../services/email.service';
+import { sendEventNotification } from '../services/email.service';
 
 export class EventController {
   static async getAllEvents(req: AuthenticatedRequest, res: Response) {
@@ -229,16 +229,17 @@ export class EventController {
               
               for (const membership of groupWithMembers.user_groups) {
                 try {
-                  await sendEventModificationNotification({
-                    to: [membership.user.email],
+                  await sendEventNotification({
+                    to: membership.user.email,
                     userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                    eventTitle: updatedEvent.title,
+                    eventTitle: `[MODIFICATO] ${updatedEvent.title}`,
                     eventDate: updatedEvent.date.toLocaleDateString('it-IT'),
+                    eventTime: updatedEvent.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                    venueName: updatedEvent.venue_name,
+                    venueCity: updatedEvent.venue_city || 'Milano',
                     groupName: groupWithMembers.name,
-                    modificationType: 'title', // Generalizzato per qualsiasi modifica
-                    oldValue: originalEvent.title,
-                    newValue: updatedEvent.title,
-                    adminName: 'Admin'
+                    creatorName: 'Admin',
+                    notes: `Evento modificato dall'amministratore. ${updatedEvent.notes || 'Nessuna nota aggiuntiva'}`
                   });
                   console.log(`✅ Email modifica inviata a ${membership.user.email}`);
                 } catch (memberEmailError) {
@@ -293,16 +294,17 @@ export class EventController {
               
               for (const membership of groupWithMembers.user_groups) {
                 try {
-                  await sendEventDeletionNotification({
-                    to: [membership.user.email],
+                  await sendEventNotification({
+                    to: membership.user.email,
                     userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                    eventTitle: eventToDelete.title,
+                    eventTitle: `[CANCELLATO] ${eventToDelete.title}`,
                     eventDate: eventToDelete.date.toLocaleDateString('it-IT'),
                     eventTime: eventToDelete.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                     venueName: eventToDelete.venue_name,
+                    venueCity: eventToDelete.venue_city || 'Milano',
                     groupName: groupWithMembers.name,
-                    deletionReason: 'Evento cancellato dall\'amministratore',
-                    adminName: 'Admin'
+                    creatorName: 'Admin',
+                    notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.'
                   });
                   console.log(`✅ Email cancellazione inviata a ${membership.user.email}`);
                 } catch (memberEmailError) {
