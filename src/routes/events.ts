@@ -206,6 +206,12 @@ router.post('/', authenticateToken, async (req, res) => {
       contact_responsible
     } = req.body;
 
+    console.log('🔍 BACKEND CREATE EVENT - Dati ricevuti:', {
+      title,
+      contact_responsible,
+      'body completo': req.body
+    });
+
     const userId = (req as any).user.userId;
 
     // Verifica che solo gli admin possano creare eventi
@@ -254,6 +260,12 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Crea l'evento
+    console.log('🔍 BACKEND CREATE EVENT - Dati da salvare:', {
+      title,
+      contact_responsible,
+      notes
+    });
+
     const event = await prisma.event.create({
       data: {
         title,
@@ -299,6 +311,13 @@ router.post('/', authenticateToken, async (req, res) => {
           }
         }
       }
+    });
+
+    console.log('🔍 BACKEND CREATE EVENT - Evento creato:', {
+      id: event.id,
+      title: event.title,
+      contact_responsible: event.contact_responsible,
+      notes: event.notes
     });
 
     // Invia notifiche email ai membri del gruppo
