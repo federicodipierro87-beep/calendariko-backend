@@ -19,16 +19,32 @@ const ReCaptcha: React.FC<ReCaptchaProps> = ({
   size = 'normal',
   theme = 'light'
 }) => {
+  console.log('🔍 ReCaptcha component rendering with key:', RECAPTCHA_SITE_KEY);
+  
   return (
     <div className="flex justify-center my-4">
-      <ReCAPTCHA
-        sitekey={RECAPTCHA_SITE_KEY}
-        onChange={onVerify}
-        onExpired={onExpired}
-        onErrored={onError}
-        size={size}
-        theme={theme}
-      />
+      <div className="border-2 border-blue-500 p-2 bg-blue-50">
+        <p className="text-blue-600 text-xs text-center mb-2">
+          🔍 ReCAPTCHA Component Loading... Key: {RECAPTCHA_SITE_KEY.substring(0, 20)}...
+        </p>
+        <ReCAPTCHA
+          sitekey={RECAPTCHA_SITE_KEY}
+          onChange={(token) => {
+            console.log('🔍 ReCAPTCHA onChange triggered:', token ? 'token received' : 'token null');
+            onVerify(token);
+          }}
+          onExpired={() => {
+            console.log('🔍 ReCAPTCHA onExpired triggered');
+            onExpired?.();
+          }}
+          onErrored={() => {
+            console.log('🔍 ReCAPTCHA onErrored triggered');
+            onError?.();
+          }}
+          size={size}
+          theme={theme}
+        />
+      </div>
     </div>
   );
 };

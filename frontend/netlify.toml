@@ -6,6 +6,7 @@
   NODE_VERSION = "18"
   NPM_VERSION = "9"
   VITE_API_URL = "https://calendariko-backend-production.up.railway.app/api"
+  # Note: VITE_RECAPTCHA_SITE_KEY should be set in Netlify dashboard environment variables for security
 
 [[headers]]
   for = "/assets/*"
