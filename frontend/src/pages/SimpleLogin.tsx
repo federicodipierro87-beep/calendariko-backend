@@ -333,20 +333,33 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           </div>
 
           {/* Debug info */}
-          <div className="text-xs text-center text-gray-500 mb-2">
+          <div className="text-xs text-center text-gray-500 mb-2 p-2 border border-gray-300">
             DEBUG: isRegisterMode={isRegisterMode.toString()}, showRecaptcha={showRecaptcha.toString()}, attempts={loginAttempts}
+            <br />
+            Condition: (isRegisterMode || showRecaptcha) = {(isRegisterMode || showRecaptcha).toString()}
+            <br />
+            reCAPTCHA token: {recaptchaToken ? 'presente' : 'null'}
           </div>
 
           {/* reCAPTCHA: sempre in registrazione, in login solo se richiesto */}
           {(isRegisterMode || showRecaptcha) && (
-            <div>
+            <div className="border-2 border-red-500 p-4 bg-red-50">
               <p className="text-red-600 text-sm text-center font-bold mb-2">
-                🔍 reCAPTCHA Component Should Appear Here
+                🔍 reCAPTCHA SECTION VISIBLE - Mode: {isRegisterMode ? 'REGISTER' : 'LOGIN'}, showRecaptcha: {showRecaptcha.toString()}
               </p>
               <ReCaptcha 
-                onVerify={(token) => setRecaptchaToken(token)}
-                onExpired={() => setRecaptchaToken(null)}
-                onError={() => setRecaptchaToken(null)}
+                onVerify={(token) => {
+                  console.log('🔍 reCAPTCHA token received:', token ? 'valid token' : 'null');
+                  setRecaptchaToken(token);
+                }}
+                onExpired={() => {
+                  console.log('🔍 reCAPTCHA expired');
+                  setRecaptchaToken(null);
+                }}
+                onError={() => {
+                  console.log('🔍 reCAPTCHA error');
+                  setRecaptchaToken(null);
+                }}
               />
               {isRegisterMode && (
                 <p className="mt-2 text-xs text-gray-500 text-center">
