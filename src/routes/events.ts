@@ -6,6 +6,78 @@ import { sendEventNotification } from '../services/email.service';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Debug endpoints - messi all'inizio per evitare conflitti
+router.get('/debug/ping', (req, res) => res.json({ message: 'Debug endpoint works!', timestamp: new Date() }));
+
+router.post('/debug/test-email/:eventId', authenticateToken, async (req, res) => {
+  try {
+    console.log('🔍 TEST EMAIL MODIFICATION CALLED');
+    const { eventId } = req.params;
+    
+    // Ottieni l'evento per il test
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        group: {
+          include: {
+            user_groups: {
+              include: {
+                user: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!event || !event.group_id) {
+      return res.status(404).json({ error: 'Event not found or no group' });
+    }
+
+    console.log('🔍 TEST - Event found:', event.title, 'Group:', event.group_id);
+
+    // Test invio email
+    setTimeout(async () => {
+      try {
+        console.log('📧 TEST - Invio notifiche email per evento modificato...');
+        
+        if (event.group && event.group.user_groups) {
+          console.log(`📧 TEST - Invio email a ${event.group.user_groups.length} membri del gruppo ${event.group.name}`);
+          
+          for (const membership of event.group.user_groups) {
+            try {
+              await sendEventNotification({
+                to: membership.user.email,
+                userName: `${membership.user.first_name} ${membership.user.last_name}`,
+                eventTitle: `[TEST MODIFICATO] ${event.title}`,
+                eventDate: event.date.toLocaleDateString('it-IT'),
+                eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                venueName: event.venue_name,
+                venueCity: event.venue_city || 'Milano',
+                groupName: event.group!.name,
+                creatorName: 'Admin',
+                notes: 'QUESTO È UN TEST DI MODIFICA EVENTO'
+              });
+              console.log(`✅ TEST - Email inviata a ${membership.user.email}`);
+            } catch (memberEmailError) {
+              console.error(`❌ TEST - Errore invio email a ${membership.user.email}:`, memberEmailError);
+            }
+          }
+          console.log('✅ TEST - Processo invio notifiche completato');
+        } else {
+          console.log('⚠️ TEST - Nessun membro trovato nel gruppo per l\'invio email');
+        }
+      } catch (emailError) {
+        console.error('❌ TEST - Errore generale invio email:', emailError);
+      }
+    }, 100);
+
+    res.json({ message: 'Test email modification triggered' });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
 // GET /api/events - Ottieni eventi (tutti per admin, solo del gruppo per utenti)
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -313,6 +385,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 // PUT /api/events/:id - Aggiorna evento
 router.put('/:id', authenticateToken, async (req, res) => {
+  console.log('🔍 updateEvent CALLED with ID:', req.params.id);
   try {
     const { id } = req.params;
     const {
@@ -336,7 +409,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const existingEvent = await prisma.event.findUnique({
       where: { id },
       include: {
-        creator: true
+        creator: true,
+        group: true
       }
     });
 
@@ -400,7 +474,51 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     });
 
+    // Rispondi al client prima di inviare email
     res.json(event);
+
+    // Invia email di modifica ai membri del gruppo (in background)
+    if (group_id || existingEvent.group_id) {
+      console.log('📧 Sending modification emails post-response');
+      setTimeout(async () => {
+        try {
+          const groupWithMembers = await prisma.group.findUnique({
+            where: { id: group_id || existingEvent.group_id! },
+            include: {
+              user_groups: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          });
+          
+          if (groupWithMembers && groupWithMembers.user_groups) {
+            for (const membership of groupWithMembers.user_groups) {
+              try {
+                await sendEventNotification({
+                  to: membership.user.email,
+                  userName: `${membership.user.first_name} ${membership.user.last_name}`,
+                  eventTitle: `[MODIFICATO] ${event.title}`,
+                  eventDate: event.date.toLocaleDateString('it-IT'),
+                  eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                  venueName: event.venue_name,
+                  venueCity: event.venue_city || 'Milano',
+                  groupName: groupWithMembers.name,
+                  creatorName: 'Admin',
+                  notes: `Evento modificato dall'amministratore. ${event.notes || 'Nessuna nota aggiuntiva'}`
+                });
+                console.log(`✅ Modification email sent to ${membership.user.email}`);
+              } catch (error) {
+                console.error('❌ Email error:', error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Group fetch error:', error);
+        }
+      }, 100);
+    }
   } catch (error) {
     console.error('Error updating event:', error);
     res.status(500).json({ error: 'Errore nell\'aggiornamento dell\'evento' });
@@ -409,15 +527,25 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
 // DELETE /api/events/:id - Elimina evento
 router.delete('/:id', authenticateToken, async (req, res) => {
+  console.log('🔍 deleteEvent CALLED with ID:', req.params.id);
   try {
     const { id } = req.params;
     const userId = (req as any).user.userId;
 
-    // Verifica che l'evento esista
+    // Verifica che l'evento esista e ottieni dati per email
     const existingEvent = await prisma.event.findUnique({
       where: { id },
       include: {
-        creator: true
+        creator: true,
+        group: {
+          include: {
+            user_groups: {
+              include: {
+                user: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -440,6 +568,38 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
 
     res.json({ message: 'Evento eliminato con successo' });
+
+    // Invia email di cancellazione ai membri del gruppo (in background)
+    if (existingEvent.group_id && existingEvent.group) {
+      console.log('📧 Sending deletion emails post-response');
+      setTimeout(async () => {
+        try {
+          if (existingEvent.group && existingEvent.group.user_groups) {
+            for (const membership of existingEvent.group.user_groups) {
+              try {
+                await sendEventNotification({
+                  to: membership.user.email,
+                  userName: `${membership.user.first_name} ${membership.user.last_name}`,
+                  eventTitle: `[CANCELLATO] ${existingEvent.title}`,
+                  eventDate: existingEvent.date.toLocaleDateString('it-IT'),
+                  eventTime: existingEvent.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                  venueName: existingEvent.venue_name,
+                  venueCity: existingEvent.venue_city || 'Milano',
+                  groupName: existingEvent.group!.name,
+                  creatorName: 'Admin',
+                  notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.'
+                });
+                console.log(`✅ Deletion email sent to ${membership.user.email}`);
+              } catch (error) {
+                console.error('❌ Email error:', error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Group fetch error:', error);
+        }
+      }, 100);
+    }
   } catch (error) {
     console.error('Error deleting event:', error);
     res.status(500).json({ error: 'Errore nell\'eliminazione dell\'evento' });
