@@ -202,7 +202,8 @@ router.post('/', authenticateToken, async (req, res) => {
       venue_city,
       group_id,
       fee,
-      notes
+      notes,
+      contact_responsible
     } = req.body;
 
     const userId = (req as any).user.userId;
@@ -266,6 +267,7 @@ router.post('/', authenticateToken, async (req, res) => {
         group_id,
         fee: fee ? parseFloat(fee) : null,
         notes,
+        contact_responsible,
         status: 'PROPOSED',
         created_by: userId
       },
