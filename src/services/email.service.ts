@@ -29,6 +29,7 @@ interface EventNotificationData {
   groupName: string;
   creatorName: string;
   notes: string;
+  eventType?: 'created' | 'modified' | 'cancelled'; // Nuovo campo per tipo evento
 }
 
 // Helper per CSS mobile-responsive comune
@@ -134,7 +135,8 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
     venueCity,
     groupName,
     creatorName,
-    notes
+    notes,
+    eventType = 'created' // Default a 'created' per compatibilità
   } = data;
 
   const formattedDate = new Date(eventDate).toLocaleDateString('it-IT', {
@@ -144,28 +146,55 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
     day: 'numeric'
   });
 
+  // Configurazioni diverse per tipo evento
+  const eventTypeConfig = {
+    created: {
+      title: 'Nuovo Evento - Calendariko',
+      headerTitle: 'Nuovo Evento Assegnato',
+      emailSubject: `🎵 Nuovo Evento: ${eventTitle} - ${formattedDate}`,
+      introText: `Hai ricevuto un nuovo evento da <strong>${creatorName}</strong> per il gruppo <strong>${groupName}</strong>.`,
+      colors: { primary: '#667eea', bg: '#f8f9fa' }
+    },
+    modified: {
+      title: 'Evento Modificato - Calendariko',
+      headerTitle: 'Evento MODIFICATO',
+      emailSubject: `🔄 Evento MODIFICATO: ${eventTitle} - ${formattedDate}`,
+      introText: `L'evento <strong>${eventTitle}</strong> è stato modificato da <strong>${creatorName}</strong> per il gruppo <strong>${groupName}</strong>.`,
+      colors: { primary: '#f59e0b', bg: '#fffbeb' }
+    },
+    cancelled: {
+      title: 'Evento Cancellato - Calendariko',
+      headerTitle: 'Evento CANCELLATO',
+      emailSubject: `❌ Evento CANCELLATO: ${eventTitle} - ${formattedDate}`,
+      introText: `L'evento <strong>${eventTitle}</strong> è stato cancellato da <strong>${creatorName}</strong> per il gruppo <strong>${groupName}</strong>.`,
+      colors: { primary: '#dc2626', bg: '#fef2f2' }
+    }
+  };
+
+  const config = eventTypeConfig[eventType];
+
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="it">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nuovo Evento - Calendariko</title>
+        <title>${config.title}</title>
         <style>
-            ${getResponsiveEmailCSS('#667eea', '#f8f9fa')}
+            ${getResponsiveEmailCSS(config.colors.primary, config.colors.bg)}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
                 <h1>🎵 Calendariko</h1>
-                <h2>Nuovo Evento Assegnato</h2>
+                <h2>${config.headerTitle}</h2>
             </div>
             
             <div class="content">
                 <p>Ciao <strong>${userName}</strong>,</p>
                 
-                <p>Hai ricevuto un nuovo evento da <strong>${creatorName}</strong> per il gruppo <strong>${groupName}</strong>.</p>
+                <p>${config.introText}</p>
                 
                 <div class="details-box">
                     <h3>📅 Dettagli Evento</h3>
@@ -201,7 +230,7 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
                     ` : ''}
                 </div>
                 
-                <p>Accedi a Calendariko per confermare la tua partecipazione e visualizzare tutti i dettagli dell'evento.</p>
+                <p>Accedi a Calendariko per ${eventType === 'cancelled' ? 'visualizzare lo stato aggiornato del calendario' : 'confermare la tua partecipazione e visualizzare tutti i dettagli dell\'evento'}.</p>
                 
                 <div class="footer">
                     <p>Questa email è stata generata automaticamente da Calendariko.</p>
@@ -217,7 +246,7 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: [to],
-      subject: `🎵 Nuovo Evento: ${eventTitle} - ${formattedDate}`,
+      subject: config.emailSubject,
       html: htmlContent,
     });
 

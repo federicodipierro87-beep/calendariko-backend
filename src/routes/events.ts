@@ -49,14 +49,15 @@ router.post('/debug/test-email/:eventId', authenticateToken, async (req, res) =>
               await sendEventNotification({
                 to: membership.user.email,
                 userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                eventTitle: `[TEST MODIFICATO] ${event.title}`,
+                eventTitle: `[TEST] ${event.title}`, // Solo [TEST] nel titolo
                 eventDate: event.date.toLocaleDateString('it-IT'),
                 eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                 venueName: event.venue_name,
                 venueCity: event.venue_city || 'Milano',
                 groupName: event.group!.name,
                 creatorName: 'Admin',
-                notes: 'QUESTO È UN TEST DI MODIFICA EVENTO'
+                notes: 'QUESTO È UN TEST DI MODIFICA EVENTO',
+                eventType: 'modified' // Test del tipo modified
               });
               console.log(`✅ TEST - Email inviata a ${membership.user.email}`);
             } catch (memberEmailError) {
@@ -499,14 +500,15 @@ router.put('/:id', authenticateToken, async (req, res) => {
                 await sendEventNotification({
                   to: membership.user.email,
                   userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                  eventTitle: `[MODIFICATO] ${event.title}`,
+                  eventTitle: event.title, // Rimuovo [MODIFICATO] dal titolo perché ora è nell'intestazione
                   eventDate: event.date.toLocaleDateString('it-IT'),
                   eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                   venueName: event.venue_name,
                   venueCity: event.venue_city || 'Milano',
                   groupName: groupWithMembers.name,
                   creatorName: 'Admin',
-                  notes: `Evento modificato dall'amministratore. ${event.notes || 'Nessuna nota aggiuntiva'}`
+                  notes: `Evento modificato dall'amministratore. ${event.notes || 'Nessuna nota aggiuntiva'}`,
+                  eventType: 'modified' // Specifico il tipo per l'intestazione
                 });
                 console.log(`✅ Modification email sent to ${membership.user.email}`);
               } catch (error) {
@@ -580,14 +582,15 @@ router.delete('/:id', authenticateToken, async (req, res) => {
                 await sendEventNotification({
                   to: membership.user.email,
                   userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                  eventTitle: `[CANCELLATO] ${existingEvent.title}`,
+                  eventTitle: existingEvent.title, // Rimuovo [CANCELLATO] dal titolo perché ora è nell'intestazione
                   eventDate: existingEvent.date.toLocaleDateString('it-IT'),
                   eventTime: existingEvent.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                   venueName: existingEvent.venue_name,
                   venueCity: existingEvent.venue_city || 'Milano',
                   groupName: existingEvent.group!.name,
                   creatorName: 'Admin',
-                  notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.'
+                  notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.',
+                  eventType: 'cancelled' // Specifico il tipo per l'intestazione
                 });
                 console.log(`✅ Deletion email sent to ${membership.user.email}`);
               } catch (error) {

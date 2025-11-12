@@ -230,14 +230,15 @@ export class EventController {
                   await sendEventNotification({
                     to: membership.user.email,
                     userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                    eventTitle: `[MODIFICATO] ${updatedEvent.title}`,
+                    eventTitle: updatedEvent.title, // Rimuovo [MODIFICATO] dal titolo
                     eventDate: updatedEvent.date.toLocaleDateString('it-IT'),
                     eventTime: updatedEvent.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                     venueName: updatedEvent.venue_name,
                     venueCity: updatedEvent.venue_city || 'Milano',
                     groupName: groupWithMembers.name,
                     creatorName: 'Admin',
-                    notes: `Evento modificato dall'amministratore. ${updatedEvent.notes || 'Nessuna nota aggiuntiva'}`
+                    notes: `Evento modificato dall'amministratore. ${updatedEvent.notes || 'Nessuna nota aggiuntiva'}`,
+                    eventType: 'modified' // Aggiungo il tipo per l'intestazione corretta
                   });
                   console.log(`✅ Modification email sent to ${membership.user.email}`);
                 } catch (error) {
@@ -287,14 +288,15 @@ export class EventController {
                   await sendEventNotification({
                     to: membership.user.email,
                     userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                    eventTitle: `[CANCELLATO] ${eventToDelete.title}`,
+                    eventTitle: eventToDelete.title, // Rimuovo [CANCELLATO] dal titolo
                     eventDate: eventToDelete.date.toLocaleDateString('it-IT'),
                     eventTime: eventToDelete.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                     venueName: eventToDelete.venue_name,
                     venueCity: eventToDelete.venue_city || 'Milano',
                     groupName: groupWithMembers.name,
                     creatorName: 'Admin',
-                    notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.'
+                    notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.',
+                    eventType: 'cancelled' // Aggiungo il tipo per l'intestazione corretta
                   });
                   console.log(`✅ Deletion email sent to ${membership.user.email}`);
                 } catch (error) {
@@ -385,14 +387,15 @@ export class EventController {
                 await sendEventNotification({
                   to: membership.user.email,
                   userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                  eventTitle: `[TEST MODIFICATO] ${event.title}`,
+                  eventTitle: `[TEST] ${event.title}`, // Solo [TEST] nel titolo
                   eventDate: event.date.toLocaleDateString('it-IT'),
                   eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                   venueName: event.venue_name,
                   venueCity: event.venue_city || 'Milano',
                   groupName: groupWithMembers.name,
                   creatorName: 'Admin',
-                  notes: 'QUESTO È UN TEST DI MODIFICA EVENTO'
+                  notes: 'QUESTO È UN TEST DI MODIFICA EVENTO',
+                  eventType: 'modified' // Test del tipo modified
                 });
                 console.log(`✅ TEST - Email inviata a ${membership.user.email}`);
               } catch (memberEmailError) {
