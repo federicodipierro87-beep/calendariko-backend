@@ -5,6 +5,7 @@ import CreateGroupModal from '../components/CreateGroupModal';
 import CreateUserModal from '../components/CreateUserModal';
 import GroupDetailModal from '../components/GroupDetailModal';
 import AvailabilityModal from '../components/AvailabilityModal';
+import EditEventModal from '../components/EditEventModal';
 import { groupsApi, eventsApi, usersApi, availabilityApi } from '../utils/api';
 
 interface DashboardProps {
@@ -29,6 +30,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [userGroups, setUserGroups] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [eventsPerPage] = useState(10);
+  const [groupsSearchTerm, setGroupsSearchTerm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showEditEventModal, setShowEditEventModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [userProfile, setUserProfile] = useState({
     firstName: user.first_name || '',
     lastName: user.last_name || '',
@@ -65,7 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         
         // Carica gruppi
         const groupsData = await groupsApi.getAll();
-        console.log('🔍 FRONTEND - Groups received:', groupsData.length, groupsData.map((g: any) => g.id));
+        console.log('🔍 FRONTEND - Groups received:', groupsData.length);
         setGroups(groupsData);
 
         // Carica gruppi dell'utente corrente per le availability
@@ -78,6 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         // Carica utenti se admin
         if (user.role === 'ADMIN') {
           const usersData = await usersApi.getAll();
+          console.log('🔍 FRONTEND - Users received:', usersData.length);
           setUsers(usersData);
         }
 
@@ -230,15 +236,89 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   };
 
-  const handleDeleteEvent = (eventId: string, eventTitle?: string) => {
-    const eventToDelete = events.find(event => event.id === eventId);
-    const title = eventTitle || eventToDelete?.title || 'questo evento';
-    
-    if (!window.confirm(`Sei sicuro di voler eliminare l'evento "${title}"? Questa azione non può essere annullata.`)) {
+  const handleEditEvent = (event: any) => {
+    if (user.role !== 'ADMIN') {
+      alert('⚠️ Solo gli admin possono modificare gli eventi');
       return;
     }
     
-    setEvents(events.filter(event => event.id !== eventId));
+    setSelectedEvent(event);
+    setShowEditEventModal(true);
+  };
+
+  // FUNZIONE DI TEST TEMPORANEA
+  const handleTestEmail = async (eventId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/debug/test-email/${eventId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        alert('✅ Test email inviato! Controlla Railway logs e Resend.');
+      } else {
+        alert('❌ Errore nell\'invio test email');
+      }
+    } catch (error) {
+      console.error('Errore test email:', error);
+      alert('❌ Errore nella chiamata test email');
+    }
+  };
+
+  const handleSaveEventChanges = async (eventData: any) => {
+    try {
+      // Aggiorna l'evento tramite API
+      await eventsApi.update(eventData.id, eventData);
+      
+      // Ricarica gli eventi
+      await reloadData();
+      
+      // Chiudi il modal
+      setShowEditEventModal(false);
+      setSelectedEvent(null);
+      
+      alert('✅ Evento modificato con successo! I membri del gruppo riceveranno una notifica via email.');
+    } catch (error: any) {
+      console.error('Errore nella modifica dell\'evento:', error);
+      alert(`❌ Errore nella modifica dell'evento: ${error.message}`);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string, eventTitle?: string) => {
+    // Previeni chiamate multiple
+    if (isDeleting) {
+      return;
+    }
+    
+    const eventToDeleteData = events.find(event => event.id === eventId);
+    const title = eventTitle || eventToDeleteData?.title || 'questo evento';
+    
+    setIsDeleting(true);
+    
+    if (!window.confirm(`Sei sicuro di voler eliminare l'evento "${title}"? Questa azione non può essere annullata.`)) {
+      setIsDeleting(false);
+      return;
+    }
+    
+    try {
+      // Chiamata API per eliminare l'evento dal backend
+      await eventsApi.delete(eventId);
+      
+      // Rimuovi l'evento dalla lista locale solo dopo il successo
+      setEvents(events.filter(event => event.id !== eventId));
+      alert(`✅ Evento "${title}" eliminato con successo! Le notifiche email sono state inviate a tutti i membri del gruppo.`);
+    } catch (error: any) {
+      console.error('Errore nell\'eliminazione dell\'evento:', error);
+      alert(`❌ Errore nell'eliminazione dell'evento: ${error.message}`);
+    } finally {
+      // Reset flag dopo un delay per permettere nuove eliminazioni
+      setTimeout(() => {
+        setIsDeleting(false);
+      }, 1000);
+    }
   };
 
   const handleCreateAvailability = async (availabilityData: any) => {
@@ -371,7 +451,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+      {/* Desktop Header - Hidden on mobile */}
+      <header className="hidden md:block bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -401,10 +482,39 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white shadow-sm border-b">
+        <div className="px-4 py-3">
+          <div className="flex justify-between items-center">
+            <h1 className="text-lg font-semibold text-gray-900">
+              🎵 Calendariko
+            </h1>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-600">
+                {user.first_name}
+              </span>
+              <button
+                onClick={handleForceReauth}
+                className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs"
+                title="Re-auth"
+              >
+                🔄
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs"
+              >
+                Esci
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pb-20 md:pb-6">
         <div className="px-4 py-6 sm:px-0">
-          {/* Navigation Menu */}
-          <div className="bg-white shadow rounded-lg mb-6">
+          {/* Desktop Navigation Menu */}
+          <div className="hidden md:block bg-white shadow rounded-lg mb-6">
             <div className="px-4 py-3">
               <nav className="flex space-x-8">
                 <button
@@ -485,7 +595,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Calendario */}
                         <div className="lg:col-span-2">
-                          <h4 className="text-lg font-medium text-gray-900 mb-4">📅 Calendario Eventi</h4>
                           <SimpleCalendar events={events} onDayClick={handleDayClick} userRole={user.role} />
                         </div>
 
@@ -534,12 +643,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                 </p>
                               </div>
 
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 cursor-pointer hover:bg-indigo-100 transition-colors" onClick={() => handleSectionClick('notifications')}>
-                                <h5 className="text-indigo-800 font-medium mb-1">📧 Notifiche</h5>
-                                <p className="text-indigo-700 text-sm">
-                                  Sistema email
-                                </p>
-                              </div>
                             </>
                           )}
                         </div>
@@ -552,18 +655,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                           {events.slice(0, 3).map(event => (
                             <div key={event.id} className="flex items-center justify-between border-b border-gray-100 pb-2 last:border-b-0">
                               <div>
-                                <div className="font-medium text-sm">{event.title}</div>
+                                <div 
+                                  className={`font-medium text-sm ${user.role === 'ADMIN' ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                                  onClick={() => user.role === 'ADMIN' && handleEditEvent(event)}
+                                  title={user.role === 'ADMIN' ? 'Clicca per modificare evento' : ''}
+                                >
+                                  {event.title}
+                                </div>
                                 <div className="text-xs text-gray-500">
                                   {new Date(event.date).toLocaleDateString('it-IT')} - {event.time}
                                 </div>
                               </div>
                               <div className={`px-2 py-1 rounded text-xs ${
-                                event.type === 'event' ? 'bg-purple-100 text-purple-700' :
-                                event.type === 'rehearsal' ? 'bg-blue-100 text-blue-700' :
-                                'bg-green-100 text-green-700'
+                                event.type === 'availability' ? 'bg-green-100 text-green-700' :
+                                'bg-blue-100 text-blue-700'
                               }`}>
-                                {event.type === 'event' ? 'Evento' :
-                                 event.type === 'rehearsal' ? 'Prova' : 'Disponibilità'}
+                                {event.type === 'availability' ? 'Confermata' : 'Opzionata'}
                               </div>
                             </div>
                           ))}
@@ -615,14 +722,35 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         : 'Visualizza i tuoi gruppi e gestisci la tua appartenenza. Clicca per entrare e vedere gli altri membri.'
                       }
                     </p>
+                    
+                    {/* Campo di ricerca gruppi */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        placeholder="🔍 Cerca gruppo per nome, tipo o genere..."
+                        value={groupsSearchTerm}
+                        onChange={(e) => setGroupsSearchTerm(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                    
                     <div className="space-y-2">
                       {(() => {
-                        // Filtra i gruppi in base al ruolo
-                        const filteredGroups = user.role === 'ADMIN' 
+                        // Filtra i gruppi in base al ruolo e alla ricerca
+                        let filteredGroups = user.role === 'ADMIN' 
                           ? groups 
                           : groups.filter(group => 
                               group.user_groups?.some((ug: any) => ug.user_id === user.id)
                             );
+                        
+                        // Applica filtro di ricerca
+                        if (groupsSearchTerm.trim()) {
+                          filteredGroups = filteredGroups.filter(group =>
+                            group.name.toLowerCase().includes(groupsSearchTerm.toLowerCase()) ||
+                            group.type.toLowerCase().includes(groupsSearchTerm.toLowerCase()) ||
+                            (group.genre && group.genre.toLowerCase().includes(groupsSearchTerm.toLowerCase()))
+                          );
+                        }
                         
                         return filteredGroups.length === 0 ? (
                           <div className="bg-white p-3 rounded border">
@@ -859,14 +987,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
-                                        <h6 className="font-medium text-gray-900">{event.title}</h6>
+                                        <h6 
+                                          className={`font-medium text-gray-900 ${user.role === 'ADMIN' ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                                          onClick={() => user.role === 'ADMIN' && handleEditEvent(event)}
+                                          title={user.role === 'ADMIN' ? 'Clicca per modificare evento' : ''}
+                                        >
+                                          {event.title}
+                                        </h6>
                                         <span className={`px-2 py-1 rounded text-xs ${
-                                          event.type === 'event' ? 'bg-purple-100 text-purple-700' :
-                                          event.type === 'rehearsal' ? 'bg-blue-100 text-blue-700' :
-                                          'bg-green-100 text-green-700'
+                                          event.type === 'availability' ? 'bg-green-100 text-green-700' :
+                                          'bg-blue-100 text-blue-700'
                                         }`}>
-                                          {event.type === 'event' ? 'Evento' :
-                                           event.type === 'rehearsal' ? 'Prova' : 'Disponibilità'}
+                                          {event.type === 'availability' ? 'Confermata' : 'Opzionata'}
                                         </span>
                                       </div>
                                       <div className="text-sm text-gray-600 mt-1">
@@ -878,9 +1010,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                       {event.group && (
                                         <div className="text-sm text-gray-600">👥 {event.group.name}</div>
                                       )}
+                                      {event.contact_responsible && (
+                                        <div className="text-sm text-gray-600">👤 Contatto: {event.contact_responsible}</div>
+                                      )}
                                     </div>
                                     <button
-                                      onClick={() => handleDeleteEvent(event.id, event.title)}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleDeleteEvent(event.id, event.title);
+                                      }}
                                       className="text-red-500 hover:text-red-700 ml-2"
                                       title="Elimina evento"
                                     >
@@ -1286,6 +1425,8 @@ ${emailData.configured ? 'Il sistema di notifiche è completamente operativo!' :
         onCreateEvent={handleCreateEvent}
         onDeleteEvent={handleDeleteEvent}
         onCreateAvailability={handleCreateAvailability}
+        onEditEvent={handleEditEvent}
+        onTestEmail={handleTestEmail}
       />
 
       {/* Modal per creazione gruppi */}
@@ -1321,6 +1462,83 @@ ${emailData.configured ? 'Il sistema di notifiche è completamente operativo!' :
         )}
         onDataChanged={reloadData}
       />
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex justify-around py-2">
+          <button
+            onClick={() => handleSectionClick('home')}
+            className={`flex flex-col items-center px-2 py-2 text-xs ${
+              activeSection === 'home'
+                ? 'text-blue-600'
+                : 'text-gray-500'
+            }`}
+          >
+            <span className="text-lg">📅</span>
+            <span>Calendario</span>
+          </button>
+          <button
+            onClick={() => handleSectionClick('groups')}
+            className={`flex flex-col items-center px-2 py-2 text-xs ${
+              activeSection === 'groups'
+                ? 'text-blue-600'
+                : 'text-gray-500'
+            }`}
+          >
+            <span className="text-lg">👥</span>
+            <span>Gruppi</span>
+          </button>
+          {user.role === 'ADMIN' && (
+            <button
+              onClick={() => handleSectionClick('users')}
+              className={`flex flex-col items-center px-2 py-2 text-xs ${
+                activeSection === 'users'
+                  ? 'text-blue-600'
+                  : 'text-gray-500'
+              }`}
+            >
+              <span className="text-lg">👤</span>
+              <span>Utenti</span>
+            </button>
+          )}
+          <button
+            onClick={() => handleSectionClick('events')}
+            className={`flex flex-col items-center px-2 py-2 text-xs ${
+              activeSection === 'events'
+                ? 'text-blue-600'
+                : 'text-gray-500'
+            }`}
+          >
+            <span className="text-lg">{user.role === 'ADMIN' ? '🎤' : '📅'}</span>
+            <span>{user.role === 'ADMIN' ? 'Eventi' : 'Disponibilità'}</span>
+          </button>
+          <button
+            onClick={() => handleSectionClick('user')}
+            className={`flex flex-col items-center px-2 py-2 text-xs ${
+              activeSection === 'user'
+                ? 'text-blue-600'
+                : 'text-gray-500'
+            }`}
+          >
+            <span className="text-lg">⚙️</span>
+            <span>Profilo</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Modal per modifica eventi */}
+      {selectedEvent && (
+        <EditEventModal
+          isOpen={showEditEventModal}
+          onClose={() => {
+            setShowEditEventModal(false);
+            setSelectedEvent(null);
+          }}
+          onSave={handleSaveEventChanges}
+          event={selectedEvent}
+          groups={groups}
+        />
+      )}
     </div>
   );
 };

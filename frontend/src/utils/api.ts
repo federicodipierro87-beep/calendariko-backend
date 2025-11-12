@@ -130,7 +130,7 @@ export const groupsApi = {
   getById: (id: string) => apiCall(`/groups/${id}`),
   addMember: (groupId: string, userId: string) => apiCall(`/groups/${groupId}/members`, {
     method: 'POST',
-    body: JSON.stringify({ user_id: userId }),
+    body: JSON.stringify({ userId: userId }),
   }),
   removeMember: (groupId: string, userId: string) => apiCall(`/groups/${groupId}/members/${userId}`, {
     method: 'DELETE',

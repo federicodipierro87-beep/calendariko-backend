@@ -5,11 +5,12 @@ interface Event {
   title: string;
   date: string;
   time: string;
-  type: 'event' | 'availability' | 'rehearsal' | 'availability-busy';
+  type: 'rehearsal' | 'availability' | 'availability-busy';
   venue?: string;
   notes?: string;
   group_id?: string;
   fee?: number;
+  contact_responsible?: string;
   group?: {
     id: string;
     name: string;
@@ -43,6 +44,8 @@ interface DayEventsModalProps {
   onCreateEvent: (event: Omit<Event, 'id'>) => void;
   onDeleteEvent: (eventId: string, eventTitle?: string) => void;
   onCreateAvailability?: (availability: any) => void;
+  onEditEvent?: (event: any) => void; // Nuova funzione per editing eventi
+  onTestEmail?: (eventId: string) => void; // FUNZIONE TEST TEMPORANEA
 }
 
 const DayEventsModal: React.FC<DayEventsModalProps> = ({
@@ -56,7 +59,9 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
   users = [],
   onCreateEvent,
   onDeleteEvent,
-  onCreateAvailability
+  onCreateAvailability,
+  onEditEvent,
+  onTestEmail
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingAvailability, setIsCreatingAvailability] = useState(false);
@@ -64,19 +69,37 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
     title: '',
     time: '',
     endTime: '',
-    type: 'event' as const,
+    type: 'rehearsal' as const,
     venue: '',
     notes: '',
     group_id: '',
-    fee: ''
+    fee: '',
+    contact_responsible: ''
   });
   const [newAvailability, setNewAvailability] = useState({
     group_id: '',
     user_id: '',
     notes: ''
   });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleDeleteEvent = (eventId: string, eventTitle: string) => {
+    // Previeni chiamate multiple
+    if (isDeleting) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    
+    onDeleteEvent(eventId, eventTitle);
+    
+    // Reset flag dopo un delay per permettere nuove eliminazioni
+    setTimeout(() => {
+      setIsDeleting(false);
+    }, 1000);
+  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('it-IT', {
@@ -99,11 +122,12 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
         title: '',
         time: '',
         endTime: '',
-        type: 'event',
+        type: 'rehearsal',
         venue: '',
         notes: '',
         group_id: '',
-        fee: ''
+        fee: '',
+        contact_responsible: ''
       });
       setIsCreating(false);
     }
@@ -136,7 +160,6 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
 
   const getEventTypeColor = (type: string) => {
     switch (type) {
-      case 'event': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'rehearsal': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'availability': return 'bg-green-100 text-green-700 border-green-200';
       case 'availability-busy': return 'bg-red-100 text-red-700 border-red-200';
@@ -146,9 +169,8 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
 
   const getEventTypeLabel = (type: string) => {
     switch (type) {
-      case 'event': return 'Evento';
-      case 'rehearsal': return 'Prova';
-      case 'availability': return 'Disponibilità';
+      case 'rehearsal': return 'Opzionata';
+      case 'availability': return 'Confermata';
       case 'availability-busy': return 'Indisponibilità';
       default: return type;
     }
@@ -157,7 +179,7 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
   // Controlla se ci sono eventi reali (non indisponibilità) nella giornata
   const hasRealEvents = () => {
     return events.some(event => 
-      event.type === 'event' || event.type === 'rehearsal'
+      event.type === 'rehearsal' || event.type === 'availability'
     );
   };
 
@@ -230,30 +252,64 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                       {event.user && event.type === 'availability-busy' && (
                         <p className="text-sm opacity-80">👤 {event.user.first_name} {event.user.last_name}</p>
                       )}
+                      {event.contact_responsible && (
+                        <p className="text-sm opacity-80">👤 Contatto: {event.contact_responsible}</p>
+                      )}
                       {event.notes && (
                         <p className="text-sm opacity-80 mt-1">📝 {event.notes}</p>
                       )}
                     </div>
-                    {/* Pulsante elimina per eventi (solo admin) */}
+                    {/* Pulsanti per eventi (solo admin) */}
                     {event.type !== 'availability-busy' && user?.role === 'ADMIN' && (
-                      <button
-                        onClick={() => onDeleteEvent(event.id, event.title)}
-                        className="text-red-500 hover:text-red-700 ml-2"
-                        title="Elimina evento"
-                      >
-                        🗑️
-                      </button>
+                      <div className="flex items-center gap-2 ml-2">
+                        {/* Pulsante test email */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onTestEmail?.(event.id);
+                          }}
+                          className="text-green-500 hover:text-green-700"
+                          title="Test Email (DEBUG)"
+                        >
+                          📧
+                        </button>
+                        
+                        {/* Pulsante modifica */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onEditEvent?.(event);
+                          }}
+                          className="text-blue-500 hover:text-blue-700"
+                          title="Modifica evento"
+                        >
+                          ✏️
+                        </button>
+                        
+                        {/* Pulsante elimina */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteEvent(event.id, event.title);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                          title="Elimina evento"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     )}
                     
                     {/* Pulsante elimina per indisponibilità proprie */}
                     {event.type === 'availability-busy' && event.user?.id === user?.id && (
                       <button
-                        onClick={() => {
-                          if (confirm('Sei sicuro di voler rimuovere questa indisponibilità?')) {
-                            // Qui dovresti chiamare l'API per eliminare l'availability
-                            // Per ora uso onDeleteEvent che funziona per gli eventi normali
-                            onDeleteEvent(event.id);
-                          }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteEvent(event.id, 'Indisponibilità');
                         }}
                         className="text-red-500 hover:text-red-700 ml-2"
                         title="Rimuovi indisponibilità"
@@ -391,9 +447,8 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                     onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="event">Evento</option>
-                    <option value="rehearsal">Prova</option>
-                    <option value="availability">Disponibilità</option>
+                    <option value="availability">Confermata</option>
+                    <option value="rehearsal">Opzionata</option>
                   </select>
                 </div>
               </div>
@@ -419,7 +474,7 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Venue/Luogo
+                  Locale
                 </label>
                 <input
                   type="text"
@@ -447,6 +502,19 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                   />
                 </div>
               )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  👤 Contatto responsabile
+                </label>
+                <input
+                  type="text"
+                  value={newEvent.contact_responsible}
+                  onChange={(e) => setNewEvent({ ...newEvent, contact_responsible: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Es: Mario Rossi, 329-1234567"
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
