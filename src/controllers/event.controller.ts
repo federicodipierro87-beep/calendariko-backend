@@ -355,4 +355,62 @@ export class EventController {
       res.status(500).json({ error: (error as Error).message });
     }
   }
+
+  // ENDPOINT DI TEST PER DEBUG EMAIL
+  static async testEmailModification(req: AuthenticatedRequest, res: Response) {
+    try {
+      console.log('🔍 TEST EMAIL MODIFICATION CALLED');
+      const { eventId } = req.params;
+      
+      // Ottieni l'evento per il test
+      const event = await EventService.getEventById(eventId);
+      if (!event || !event.group_id) {
+        return res.status(404).json({ error: 'Event not found or no group' });
+      }
+
+      console.log('🔍 TEST - Event found:', event.title, 'Group:', event.group_id);
+
+      // COPIA ESATTA DEL CODICE CHE FUNZIONA PER CREATION
+      setImmediate(async () => {
+        try {
+          console.log('📧 TEST - Invio notifiche email per evento modificato...');
+          
+          // Ottieni i membri del gruppo per inviare le email
+          const groupWithMembers = await GroupService.getGroupById(event.group_id!);
+          if (groupWithMembers && groupWithMembers.user_groups) {
+            console.log(`📧 TEST - Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+            
+            for (const membership of groupWithMembers.user_groups) {
+              try {
+                await sendEventNotification({
+                  to: membership.user.email,
+                  userName: `${membership.user.first_name} ${membership.user.last_name}`,
+                  eventTitle: `[TEST MODIFICATO] ${event.title}`,
+                  eventDate: event.date.toLocaleDateString('it-IT'),
+                  eventTime: event.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                  venueName: event.venue_name,
+                  venueCity: event.venue_city || 'Milano',
+                  groupName: groupWithMembers.name,
+                  creatorName: 'Admin',
+                  notes: 'QUESTO È UN TEST DI MODIFICA EVENTO'
+                });
+                console.log(`✅ TEST - Email inviata a ${membership.user.email}`);
+              } catch (memberEmailError) {
+                console.error(`❌ TEST - Errore invio email a ${membership.user.email}:`, memberEmailError);
+              }
+            }
+            console.log('✅ TEST - Processo invio notifiche completato');
+          } else {
+            console.log('⚠️ TEST - Nessun membro trovato nel gruppo per l\'invio email');
+          }
+        } catch (emailError) {
+          console.error('❌ TEST - Errore generale invio email:', emailError);
+        }
+      });
+
+      res.json({ message: 'Test email modification triggered' });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
 }
