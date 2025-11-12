@@ -60,9 +60,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           title: event.title,
           date: event.date ? event.date.split('T')[0] : '', // Estrae solo la data con controllo
           time: event.start_time || '',
+          endTime: event.end_time || '',               // AGGIUNTO: mappa end_time a endTime
           type: event.event_type || 'event',
           venue: event.venue_name || '',
           notes: event.notes || '',
+          contact_responsible: event.contact_responsible || '',  // AGGIUNTO: mappa contact_responsible
           group_id: event.group_id,
           group: event.group,
           fee: event.fee || 0
@@ -133,9 +135,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         title: event.title,
         date: event.date ? event.date.split('T')[0] : '',
         time: event.start_time || '',
+        endTime: event.end_time || '',               // AGGIUNTO: mappa end_time a endTime
         type: event.event_type || 'event',
         venue: event.venue_name || '',
         notes: event.notes || '',
+        contact_responsible: event.contact_responsible || '',  // AGGIUNTO: mappa contact_responsible
         group_id: event.group_id,
         group: event.group,
         fee: event.fee || 0
@@ -201,6 +205,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         venue_city: 'Milano', // Default, potrebbe essere configurabile
         group_id: newEvent.group_id,
         notes: newEvent.notes,
+        contact_responsible: newEvent.contact_responsible,
         fee: newEvent.fee ? parseFloat(newEvent.fee) : undefined
       };
 
@@ -214,9 +219,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         title: createdEvent.title || newEvent.title,
         date: createdEvent.date ? createdEvent.date.split('T')[0] : newEvent.date,
         time: createdEvent.start_time || newEvent.time,
+        endTime: createdEvent.end_time || newEvent.endTime,    // AGGIUNTO: mappa end_time a endTime
         type: createdEvent.event_type || newEvent.type || 'event',
         venue: createdEvent.venue_name || newEvent.venue || '',
         notes: createdEvent.notes || newEvent.notes || '',
+        contact_responsible: createdEvent.contact_responsible || newEvent.contact_responsible || '',  // AGGIUNTO: mappa contact_responsible
         group_id: createdEvent.group_id || newEvent.group_id,
         group: createdEvent.group,
         fee: createdEvent.fee || (newEvent.fee ? parseFloat(newEvent.fee) : 0)

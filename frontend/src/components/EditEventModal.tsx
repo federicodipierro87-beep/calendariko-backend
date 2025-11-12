@@ -40,13 +40,10 @@ const EditEventModal: React.FC<EditEventModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     title: '',
-    event_type: 'rehearsal',
-    date: '',
-    start_time: '',
-    end_time: '',
-    venue_name: '',
-    venue_address: '',
-    venue_city: '',
+    type: 'rehearsal',
+    time: '',
+    endTime: '',
+    venue: '',
     group_id: '',
     fee: '',
     notes: '',
@@ -56,20 +53,40 @@ const EditEventModal: React.FC<EditEventModalProps> = ({
   // Aggiorna il form quando cambia l'evento
   useEffect(() => {
     if (event && isOpen) {
-      setFormData({
-        title: event.title || '',
-        event_type: event.event_type || 'rehearsal',
-        date: event.date ? event.date.split('T')[0] : '',
-        start_time: event.start_time ? event.start_time.split('T')[1]?.substring(0, 5) || '' : '',
-        end_time: event.end_time ? event.end_time.split('T')[1]?.substring(0, 5) || '' : '',
-        venue_name: event.venue_name || '',
-        venue_address: event.venue_address || '',
-        venue_city: event.venue_city || '',
-        group_id: event.group_id || '',
-        fee: event.fee?.toString() || '',
-        notes: event.notes || '',
-        contact_responsible: event.contact_responsible || ''
-      });
+      console.log('EditEventModal - Event data received:', event);
+      console.log('EditEventModal - Available fields:', Object.keys(event));
+      
+      // Funzione helper per estrarre data
+      const getDatePart = (dateStr: string | Date) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toISOString().split('T')[0];
+      };
+      
+      // Funzione helper per estrarre tempo
+      const getTimePart = (dateStr: string | Date) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toTimeString().substring(0, 5);
+      };
+      
+      // Cast per bypassare TypeScript e accedere ai campi dinamicamente
+      const eventData = event as any;
+      
+      const newFormData = {
+        title: eventData.title || '',
+        type: eventData.type || eventData.event_type || 'rehearsal',
+        time: getTimePart(eventData.time || eventData.start_time),
+        endTime: getTimePart(eventData.endTime || eventData.end_time),
+        venue: eventData.venue || eventData.venue_name || '',
+        group_id: eventData.group_id || '',
+        fee: eventData.fee?.toString() || '',
+        notes: eventData.notes || '',
+        contact_responsible: eventData.contact_responsible || ''
+      };
+      
+      console.log('EditEventModal - Form data set to:', newFormData);
+      setFormData(newFormData);
     }
   }, [event, isOpen]);
 
@@ -86,17 +103,17 @@ const EditEventModal: React.FC<EditEventModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Costruisci l'oggetto con le modifiche
+    // Costruisci l'oggetto con le modifiche mappando ai nomi API corretti
     const eventUpdates = {
       id: event.id,
       title: formData.title,
-      event_type: formData.event_type,
-      date: formData.date,
-      start_time: formData.start_time,
-      end_time: formData.end_time,
-      venue_name: formData.venue_name,
-      venue_address: formData.venue_address,
-      venue_city: formData.venue_city,
+      event_type: formData.type,           // Mappa 'type' a 'event_type'
+      date: event.date,                    // Usa la data originale dell'evento (non modificabile nel modal di modifica)
+      start_time: formData.time,           // Mappa 'time' a 'start_time' 
+      end_time: formData.endTime,          // Mappa 'endTime' a 'end_time'
+      venue_name: formData.venue,          // Mappa 'venue' a 'venue_name'
+      venue_address: '',                   // Campi non presenti nel modal semplificato
+      venue_city: 'Milano',                // Default
       group_id: formData.group_id,
       fee: formData.fee ? parseFloat(formData.fee) : undefined,
       notes: formData.notes,
@@ -121,219 +138,152 @@ const EditEventModal: React.FC<EditEventModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Titolo e Tipo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Titolo Evento *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="event_type" className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo Evento
-              </label>
-              <select
-                id="event_type"
-                name="event_type"
-                value={formData.event_type}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="rehearsal">Opzionata</option>
-                <option value="availability">Confermata</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Data e Orari */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                Data *
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">
-                Ora Inizio *
-              </label>
-              <input
-                type="time"
-                id="start_time"
-                name="start_time"
-                value={formData.start_time}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">
-                Ora Fine *
-              </label>
-              <input
-                type="time"
-                id="end_time"
-                name="end_time"
-                value={formData.end_time}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Locale */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="venue_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nome Locale *
-              </label>
-              <input
-                type="text"
-                id="venue_name"
-                name="venue_name"
-                value={formData.venue_name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="venue_address" className="block text-sm font-medium text-gray-700 mb-1">
-                Indirizzo
-              </label>
-              <input
-                type="text"
-                id="venue_address"
-                name="venue_address"
-                value={formData.venue_address}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="venue_city" className="block text-sm font-medium text-gray-700 mb-1">
-                Città *
-              </label>
-              <input
-                type="text"
-                id="venue_city"
-                name="venue_city"
-                value={formData.venue_city}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Gruppo e Fee */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="group_id" className="block text-sm font-medium text-gray-700 mb-1">
-                Gruppo
-              </label>
-              <select
-                id="group_id"
-                name="group_id"
-                value={formData.group_id}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Seleziona gruppo...</option>
-                {groups.map(group => (
-                  <option key={group.id} value={group.id}>
-                    {group.name} ({group.type})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="fee" className="block text-sm font-medium text-gray-700 mb-1">
-                Compenso (€)
-              </label>
-              <input
-                type="number"
-                id="fee"
-                name="fee"
-                value={formData.fee}
-                onChange={handleInputChange}
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Contatto Responsabile */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* IDENTICO AL MODAL DI CREAZIONE */}
+          
           <div>
-            <label htmlFor="contact_responsible" className="block text-sm font-medium text-gray-700 mb-1">
-              Contatto Responsabile
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Titolo Evento *
             </label>
             <input
               type="text"
-              id="contact_responsible"
-              name="contact_responsible"
-              value={formData.contact_responsible}
-              onChange={handleInputChange}
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Es: Concerto Jazz Club"
+              required
             />
           </div>
 
-          {/* Note */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Orario Inizio *
+              </label>
+              <input
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Orario Fine *
+              </label>
+              <input
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tipo
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="availability">Confermata</option>
+                <option value="rehearsal">Opzionata</option>
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Gruppo/Artista *
+            </label>
+            <select
+              value={formData.group_id}
+              onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Seleziona gruppo/artista</option>
+              {groups.map(group => (
+                <option key={group.id} value={group.id}>
+                  {group.name} ({group.type === 'BAND' ? 'Band' : group.type === 'DJ' ? 'DJ' : 'Solista'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Locale
+            </label>
+            <input
+              type="text"
+              value={formData.venue}
+              onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Es: Jazz Club Milano"
+            />
+          </div>
+
+          {/* Campo Cachet - solo per Admin */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              💰 Cachet (€)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.fee}
+              onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Es: 500.00"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              👤 Contatto responsabile
+            </label>
+            <input
+              type="text"
+              value={formData.contact_responsible}
+              onChange={(e) => setFormData({ ...formData, contact_responsible: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Es: Mario Rossi, 329-1234567"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Note
             </label>
             <textarea
-              id="notes"
-              name="notes"
               value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              placeholder="Note aggiuntive..."
             />
           </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end space-x-3 pt-6">
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              ✅ Salva Modifiche
+            </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
             >
-              Annulla
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              💾 Salva Modifiche
+              ❌ Annulla
             </button>
           </div>
         </form>

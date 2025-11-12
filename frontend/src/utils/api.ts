@@ -191,6 +191,9 @@ export const usersApi = {
   delete: (id: string) => apiCall(`/users/${id}`, {
     method: 'DELETE',
   }),
+  unlock: (id: string) => apiCall(`/users/${id}/unlock`, {
+    method: 'POST',
+  }),
 };
 
 export const availabilityApi = {

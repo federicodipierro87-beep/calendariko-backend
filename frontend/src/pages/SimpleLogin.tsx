@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authApi, groupsApi } from '../utils/api';
+import ReCaptcha from '../components/ReCaptcha';
 
 interface SimpleLoginProps {
   onLogin: (user: any, accessToken: string, refreshToken: string) => void;
@@ -17,6 +18,10 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [showRecaptcha, setShowRecaptcha] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+
 
   // Carica i gruppi disponibili quando si passa alla modalità registrazione
   useEffect(() => {
@@ -77,13 +82,20 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           return;
         }
         
+        // Per la registrazione, reCAPTCHA è sempre richiesto
+        if (!recaptchaToken) {
+          setError('Completa la verifica reCAPTCHA per registrarti');
+          setLoading(false);
+          return;
+        }
         const response = await authApi.publicRegister({
           email,
           password,
           first_name: firstName,
           last_name: lastName,
           phone: phone || undefined,
-          selectedGroup: selectedGroup
+          selectedGroup: selectedGroup,
+          recaptchaToken: recaptchaToken
         });
         
         // Mostra popup di successo più visibile
@@ -97,11 +109,39 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
         setIsRegisterMode(false);
       } else {
         // Login
-        const data = await authApi.login({ email, password });
+        // Se reCAPTCHA è richiesto, verifica che sia presente
+        if (showRecaptcha && !recaptchaToken) {
+          setError('Completa la verifica reCAPTCHA per continuare');
+          setLoading(false);
+          return;
+        }
+
+        const loginData: any = { email, password };
+        if (recaptchaToken) {
+          loginData.recaptchaToken = recaptchaToken;
+        }
+
+        const data = await authApi.login(loginData);
         onLogin(data.user, data.accessToken, data.refreshToken);
       }
     } catch (err: any) {
-      setError(err.message || (isRegisterMode ? 'Registrazione fallita' : 'Login fallito'));
+      const errorMessage = err.message || (isRegisterMode ? 'Registrazione fallita' : 'Login fallito');
+      setError(errorMessage);
+      
+      // Per il login, controlla se l'errore richiede reCAPTCHA
+      if (!isRegisterMode) {
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+        
+        console.log('🔍 LOGIN FAILED - Attempts:', newAttempts, 'Error:', errorMessage);
+        
+        // Mostra reCAPTCHA se l'errore lo richiede o dopo 3 tentativi
+        if (errorMessage.includes('reCAPTCHA richiesta') || newAttempts >= 3) {
+          console.log('🔍 SHOWING RECAPTCHA - Attempts:', newAttempts);
+          setShowRecaptcha(true);
+          setRecaptchaToken(null); // Reset del token
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -116,6 +156,9 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
     setSelectedGroup('');
     setError('');
     setSuccess('');
+    setRecaptchaToken(null);
+    setShowRecaptcha(false);
+    setLoginAttempts(0);
   };
 
   const toggleMode = () => {
@@ -289,10 +332,39 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
             </div>
           </div>
 
+          {/* Debug info */}
+          <div className="text-xs text-center text-gray-500 mb-2">
+            DEBUG: isRegisterMode={isRegisterMode.toString()}, showRecaptcha={showRecaptcha.toString()}, attempts={loginAttempts}
+          </div>
+
+          {/* reCAPTCHA: sempre in registrazione, in login solo se richiesto */}
+          {(isRegisterMode || showRecaptcha) && (
+            <div>
+              <p className="text-red-600 text-sm text-center font-bold mb-2">
+                🔍 reCAPTCHA Component Should Appear Here
+              </p>
+              <ReCaptcha 
+                onVerify={(token) => setRecaptchaToken(token)}
+                onExpired={() => setRecaptchaToken(null)}
+                onError={() => setRecaptchaToken(null)}
+              />
+              {isRegisterMode && (
+                <p className="mt-2 text-xs text-gray-500 text-center">
+                  Verifica di essere umano per completare la registrazione
+                </p>
+              )}
+              {!isRegisterMode && showRecaptcha && (
+                <p className="mt-2 text-xs text-orange-600 text-center">
+                  ⚠️ Verifica reCAPTCHA richiesta a causa di tentativi di accesso falliti
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (isRegisterMode && !recaptchaToken) || (showRecaptcha && !recaptchaToken)}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {loading 
