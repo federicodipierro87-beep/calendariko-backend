@@ -21,6 +21,7 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [showRecaptcha, setShowRecaptcha] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
 
 
   // Carica i gruppi disponibili quando si passa alla modalità registrazione
@@ -132,23 +133,22 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
       if (!isRegisterMode) {
         const newAttempts = loginAttempts + 1;
         
-        // Debug persistente con alert
-        alert(`🔍 LOGIN FALLITO!\nTentativi: ${newAttempts}\nErrore: ${errorMessage}\nMostrare reCAPTCHA: ${newAttempts >= 3 ? 'SÌ' : 'NO'}`);
+        // Aggiungi al log persistente
+        const logEntry = `TENTATIVO ${newAttempts}: ${errorMessage} [${new Date().toLocaleTimeString()}]`;
+        setDebugLog(prev => [...prev, logEntry]);
         
         console.log('🔍 LOGIN FAILED - Attempts:', newAttempts, 'Error:', errorMessage);
-        console.log('🔍 Setting loginAttempts to:', newAttempts);
         
         setLoginAttempts(newAttempts);
         
         // Mostra reCAPTCHA se l'errore lo richiede o dopo 3 tentativi
         if (errorMessage.includes('reCAPTCHA richiesta') || newAttempts >= 3) {
+          const recaptchaLogEntry = `>>> ATTIVANDO reCAPTCHA dopo ${newAttempts} tentativi [${new Date().toLocaleTimeString()}]`;
+          setDebugLog(prev => [...prev, recaptchaLogEntry]);
+          
           console.log('🔍 SHOWING RECAPTCHA - Attempts:', newAttempts);
-          console.log('🔍 Setting showRecaptcha to TRUE');
           setShowRecaptcha(true);
           setRecaptchaToken(null); // Reset del token
-          
-          // Alert per debug
-          alert(`🔍 ATTIVANDO reCAPTCHA!\nTentativi: ${newAttempts}\nshowRecaptcha settato a: TRUE`);
         }
       }
     } finally {
@@ -168,6 +168,7 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
     setRecaptchaToken(null);
     setShowRecaptcha(false);
     setLoginAttempts(0);
+    setDebugLog([]);
   };
 
   const toggleMode = () => {
@@ -349,6 +350,18 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
             <br />
             reCAPTCHA token: {recaptchaToken ? 'presente' : 'null'}
           </div>
+
+          {/* Log persistente dei tentativi */}
+          {debugLog.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-300 p-3 mb-4 rounded">
+              <h4 className="font-bold text-yellow-800 mb-2">🔍 LOG TENTATIVI LOGIN:</h4>
+              {debugLog.map((log, index) => (
+                <div key={index} className="text-xs text-yellow-700 mb-1 font-mono">
+                  {log}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* reCAPTCHA: sempre in registrazione, in login solo se richiesto */}
           {(isRegisterMode || showRecaptcha) && (
