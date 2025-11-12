@@ -45,7 +45,6 @@ interface DayEventsModalProps {
   onDeleteEvent: (eventId: string, eventTitle?: string) => void;
   onCreateAvailability?: (availability: any) => void;
   onEditEvent?: (event: any) => void; // Nuova funzione per editing eventi
-  onTestEmail?: (eventId: string) => void; // FUNZIONE TEST TEMPORANEA
 }
 
 const DayEventsModal: React.FC<DayEventsModalProps> = ({
@@ -60,8 +59,7 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
   onCreateEvent,
   onDeleteEvent,
   onCreateAvailability,
-  onEditEvent,
-  onTestEmail
+  onEditEvent
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingAvailability, setIsCreatingAvailability] = useState(false);
@@ -262,19 +260,6 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                     {/* Pulsanti per eventi (solo admin) */}
                     {event.type !== 'availability-busy' && user?.role === 'ADMIN' && (
                       <div className="flex items-center gap-2 ml-2">
-                        {/* Pulsante test email */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onTestEmail?.(event.id);
-                          }}
-                          className="text-green-500 hover:text-green-700"
-                          title="Test Email (DEBUG)"
-                        >
-                          📧
-                        </button>
-                        
                         {/* Pulsante modifica */}
                         <button
                           onClick={(e) => {
