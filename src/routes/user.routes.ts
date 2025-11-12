@@ -9,5 +9,6 @@ router.get('/:id', authenticateToken, UserController.getUserById);
 router.put('/:id', authenticateToken, UserController.updateUser);
 router.delete('/:id', authenticateToken, requireAdmin, UserController.deleteUser);
 router.post('/change-password', authenticateToken, UserController.changePassword);
+router.post('/:id/unlock', authenticateToken, requireAdmin, UserController.unlockUser);
 
 export default router;

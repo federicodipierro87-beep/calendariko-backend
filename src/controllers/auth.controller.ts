@@ -6,13 +6,13 @@ import { PrismaClient } from '@prisma/client';
 export class AuthController {
   static async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body;
+      const { email, password, recaptchaToken } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
-      const result = await AuthService.login(email, password);
+      const result = await AuthService.login(email, password, recaptchaToken);
       res.json(result);
     } catch (error) {
       res.status(401).json({ error: (error as Error).message });
@@ -65,7 +65,7 @@ export class AuthController {
 
   static async publicRegister(req: Request, res: Response) {
     try {
-      const { email, password, first_name, last_name, phone, selectedGroup } = req.body;
+      const { email, password, first_name, last_name, phone, selectedGroup, recaptchaToken } = req.body;
 
       if (!email || !password || !first_name || !last_name) {
         return res.status(400).json({ error: 'Email, password, nome e cognome sono obbligatori' });
@@ -73,6 +73,10 @@ export class AuthController {
 
       if (!selectedGroup) {
         return res.status(400).json({ error: 'Gruppo di appartenenza è obbligatorio' });
+      }
+
+      if (!recaptchaToken) {
+        return res.status(400).json({ error: 'Verifica reCAPTCHA richiesta' });
       }
 
       // Registrazione pubblica: sempre con ruolo ARTIST

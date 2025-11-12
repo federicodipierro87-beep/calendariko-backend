@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { UserService } from '../services/user.service';
+import { AuthService } from '../services/auth.service';
 
 export class UserController {
   static async getAllUsers(req: AuthenticatedRequest, res: Response) {
@@ -87,6 +88,25 @@ export class UserController {
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
+    }
+  }
+
+  static async unlockUser(req: AuthenticatedRequest, res: Response) {
+    try {
+      // Solo gli admin possono riabilitare utenti
+      if (req.user?.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono riabilitare gli utenti' });
+      }
+
+      const { id } = req.params;
+      const user = await AuthService.unlockUser(id);
+      
+      res.json({ 
+        message: 'Utente riabilitato con successo',
+        user 
+      });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 }

@@ -18,6 +18,12 @@ model User {
   avatar_url   String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
+  
+  // Campi per sicurezza login
+  failed_login_attempts Int @default(0)
+  last_failed_attempt   DateTime?
+  account_locked        Boolean @default(false)
+  locked_at            DateTime?
 
   user_groups   UserGroup[]
   created_events Event[]

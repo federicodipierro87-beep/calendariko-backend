@@ -2,22 +2,92 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 import { sendWelcomeEmail } from './email.service';
+import axios from 'axios';
 
 const prisma = new PrismaClient();
 
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || 'your-secret-key';
+const MAX_LOGIN_ATTEMPTS = 5;
+const REQUIRE_RECAPTCHA_AFTER = 3;
+
 export class AuthService {
-  static async login(email: string, password: string) {
+  static async verifyRecaptcha(token: string): Promise<boolean> {
+    try {
+      const response = await axios.post('https://www.google.com/recaptcha/api/siteverify', null, {
+        params: {
+          secret: RECAPTCHA_SECRET_KEY,
+          response: token
+        }
+      });
+      return response.data.success;
+    } catch (error) {
+      console.error('Errore verifica reCAPTCHA:', error);
+      return false;
+    }
+  }
+
+  static async login(email: string, password: string, recaptchaToken?: string) {
     const user = await prisma.user.findUnique({
       where: { email }
     });
 
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new Error('Credenziali non valide');
+    }
+
+    // Controlla se l'account è bloccato
+    if (user.account_locked) {
+      throw new Error('Account disabilitato. Contatta un amministratore per la riattivazione.');
+    }
+
+    // Verifica se serve reCAPTCHA (dopo 3 tentativi falliti)
+    if (user.failed_login_attempts >= REQUIRE_RECAPTCHA_AFTER) {
+      if (!recaptchaToken) {
+        throw new Error('Verifica reCAPTCHA richiesta a causa di tentativi di accesso falliti.');
+      }
+
+      const isRecaptchaValid = await this.verifyRecaptcha(recaptchaToken);
+      if (!isRecaptchaValid) {
+        throw new Error('Verifica reCAPTCHA fallita. Riprova.');
+      }
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      throw new Error('Invalid credentials');
+      // Incrementa il contatore dei tentativi falliti
+      const newFailedAttempts = user.failed_login_attempts + 1;
+      
+      // Blocca l'account se raggiunge il limite massimo
+      const shouldLockAccount = newFailedAttempts >= MAX_LOGIN_ATTEMPTS;
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failed_login_attempts: newFailedAttempts,
+          last_failed_attempt: new Date(),
+          account_locked: shouldLockAccount,
+          locked_at: shouldLockAccount ? new Date() : null
+        }
+      });
+
+      if (shouldLockAccount) {
+        throw new Error('Account disabilitato dopo troppi tentativi falliti. Contatta un amministratore.');
+      } else if (newFailedAttempts >= REQUIRE_RECAPTCHA_AFTER) {
+        throw new Error(`Credenziali non valide. Tentativo ${newFailedAttempts} di ${MAX_LOGIN_ATTEMPTS}. Verifica reCAPTCHA richiesta.`);
+      } else {
+        throw new Error(`Credenziali non valide. Tentativo ${newFailedAttempts} di ${MAX_LOGIN_ATTEMPTS}.`);
+      }
+    }
+
+    // Login riuscito - resetta i contatori
+    if (user.failed_login_attempts > 0) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failed_login_attempts: 0,
+          last_failed_attempt: null
+        }
+      });
     }
 
     const tokens = generateTokens({
@@ -60,6 +130,26 @@ export class AuthService {
     });
 
     return tokens;
+  }
+
+  static async unlockUser(userId: string) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        account_locked: false,
+        failed_login_attempts: 0,
+        last_failed_attempt: null,
+        locked_at: null
+      }
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      account_locked: user.account_locked
+    };
   }
 
   static async createUser(userData: {
