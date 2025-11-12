@@ -131,15 +131,24 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
       // Per il login, controlla se l'errore richiede reCAPTCHA
       if (!isRegisterMode) {
         const newAttempts = loginAttempts + 1;
-        setLoginAttempts(newAttempts);
+        
+        // Debug persistente con alert
+        alert(`🔍 LOGIN FALLITO!\nTentativi: ${newAttempts}\nErrore: ${errorMessage}\nMostrare reCAPTCHA: ${newAttempts >= 3 ? 'SÌ' : 'NO'}`);
         
         console.log('🔍 LOGIN FAILED - Attempts:', newAttempts, 'Error:', errorMessage);
+        console.log('🔍 Setting loginAttempts to:', newAttempts);
+        
+        setLoginAttempts(newAttempts);
         
         // Mostra reCAPTCHA se l'errore lo richiede o dopo 3 tentativi
         if (errorMessage.includes('reCAPTCHA richiesta') || newAttempts >= 3) {
           console.log('🔍 SHOWING RECAPTCHA - Attempts:', newAttempts);
+          console.log('🔍 Setting showRecaptcha to TRUE');
           setShowRecaptcha(true);
           setRecaptchaToken(null); // Reset del token
+          
+          // Alert per debug
+          alert(`🔍 ATTIVANDO reCAPTCHA!\nTentativi: ${newAttempts}\nshowRecaptcha settato a: TRUE`);
         }
       }
     } finally {
