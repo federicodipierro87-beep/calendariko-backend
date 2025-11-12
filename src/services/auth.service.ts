@@ -27,13 +27,18 @@ export class AuthService {
   }
 
   static async login(email: string, password: string, recaptchaToken?: string) {
+    console.log('🔍 LOGIN ATTEMPT - Email:', email, 'ReCAPTCHA:', !!recaptchaToken);
+    
     const user = await prisma.user.findUnique({
       where: { email }
     });
 
     if (!user) {
+      console.log('🔍 USER NOT FOUND - Email:', email);
       throw new Error('Credenziali non valide');
     }
+    
+    console.log('🔍 USER FOUND - Failed attempts:', user.failed_login_attempts, 'Account locked:', user.account_locked);
 
     // Controlla se l'account è bloccato
     if (user.account_locked) {
@@ -57,8 +62,11 @@ export class AuthService {
       // Incrementa il contatore dei tentativi falliti
       const newFailedAttempts = user.failed_login_attempts + 1;
       
+      console.log('🔍 PASSWORD INVALID - Incrementing attempts from', user.failed_login_attempts, 'to', newFailedAttempts);
+      
       // Blocca l'account se raggiunge il limite massimo
       const shouldLockAccount = newFailedAttempts >= MAX_LOGIN_ATTEMPTS;
+      console.log('🔍 SHOULD LOCK ACCOUNT?', shouldLockAccount, '(attempts:', newFailedAttempts, '>=', MAX_LOGIN_ATTEMPTS, ')');
 
       await prisma.user.update({
         where: { id: user.id },
@@ -69,12 +77,17 @@ export class AuthService {
           locked_at: shouldLockAccount ? new Date() : null
         }
       });
+      
+      console.log('🔍 USER UPDATED - New attempts:', newFailedAttempts, 'Locked:', shouldLockAccount);
 
       if (shouldLockAccount) {
+        console.log('🔍 THROWING ACCOUNT LOCKED ERROR');
         throw new Error('Account disabilitato dopo troppi tentativi falliti. Contatta un amministratore.');
       } else if (newFailedAttempts >= REQUIRE_RECAPTCHA_AFTER) {
+        console.log('🔍 THROWING RECAPTCHA REQUIRED ERROR');
         throw new Error(`Credenziali non valide. Tentativo ${newFailedAttempts} di ${MAX_LOGIN_ATTEMPTS}. Verifica reCAPTCHA richiesta.`);
       } else {
+        console.log('🔍 THROWING STANDARD ERROR');
         throw new Error(`Credenziali non valide. Tentativo ${newFailedAttempts} di ${MAX_LOGIN_ATTEMPTS}.`);
       }
     }
