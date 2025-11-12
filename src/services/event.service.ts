@@ -93,6 +93,7 @@ export class EventService {
     fee?: number;
     status?: 'PROPOSED' | 'CONFIRMED' | 'CANCELLED';
     notes?: string;
+    contact_responsible?: string;
     created_by: string;
   }) {
     console.log('Creating event with data:', data);
@@ -146,6 +147,7 @@ export class EventService {
     fee?: number;
     status?: 'PROPOSED' | 'CONFIRMED' | 'CANCELLED';
     notes?: string;
+    contact_responsible?: string;
   }) {
     const updateData: any = { ...data };
 

@@ -401,7 +401,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       group_id,
       fee,
       status,
-      notes
+      notes,
+      contact_responsible
     } = req.body;
 
     const userId = (req as any).user.userId;
@@ -443,7 +444,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         group_id,
         fee: fee ? parseFloat(fee) : null,
         status,
-        notes
+        notes,
+        contact_responsible
       },
       include: {
         group: {

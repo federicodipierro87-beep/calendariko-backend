@@ -85,7 +85,8 @@ export class EventController {
         group_id,
         fee,
         status,
-        notes
+        notes,
+        contact_responsible
       } = req.body;
 
       console.log('Event creation request body:', req.body);
@@ -108,6 +109,7 @@ export class EventController {
         fee,
         status,
         notes,
+        contact_responsible,
         created_by: req.user?.userId!
       });
 
@@ -177,7 +179,8 @@ export class EventController {
         group_id,
         fee,
         status,
-        notes
+        notes,
+        contact_responsible
       } = req.body;
 
       // Ottieni l'evento originale prima della modifica per confrontare le modifiche
@@ -211,7 +214,8 @@ export class EventController {
         group_id,
         fee,
         status,
-        notes
+        notes,
+        contact_responsible
       });
 
 
