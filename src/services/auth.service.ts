@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 import { sendWelcomeEmail } from './email.service';
+import { NotificationService } from './notification.service';
 import axios from 'axios';
 
 const prisma = new PrismaClient();
@@ -209,7 +210,7 @@ export class AuthService {
       });
     }
 
-    // Invia email di benvenuto in background per non rallentare la risposta
+    // Invia email di benvenuto e crea notifica per admin in background
     setImmediate(async () => {
       try {
         await sendWelcomeEmail({
@@ -222,6 +223,21 @@ export class AuthService {
         console.log(`✅ Email di benvenuto inviata a ${user.email}`);
       } catch (emailError) {
         console.error(`❌ Errore nell'invio email di benvenuto a ${user.email}:`, emailError);
+      }
+
+      // Crea notifica per admin solo per registrazioni pubbliche (utenti senza gruppi)
+      if (user.role === 'ARTIST' && (!userData.selectedGroups || userData.selectedGroups.length === 0)) {
+        try {
+          await NotificationService.createNewUserRegistrationNotification({
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name
+          });
+          console.log(`📬 Notifica creata per nuovo utente: ${user.email}`);
+        } catch (notificationError) {
+          console.error(`❌ Errore creazione notifica per ${user.email}:`, notificationError);
+        }
       }
     });
     

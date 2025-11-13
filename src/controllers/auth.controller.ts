@@ -65,33 +65,28 @@ export class AuthController {
 
   static async publicRegister(req: Request, res: Response) {
     try {
-      const { email, password, first_name, last_name, phone, selectedGroup, recaptchaToken } = req.body;
+      const { email, password, first_name, last_name, phone, recaptchaToken } = req.body;
 
       if (!email || !password || !first_name || !last_name) {
         return res.status(400).json({ error: 'Email, password, nome e cognome sono obbligatori' });
-      }
-
-      if (!selectedGroup) {
-        return res.status(400).json({ error: 'Gruppo di appartenenza è obbligatorio' });
       }
 
       if (!recaptchaToken) {
         return res.status(400).json({ error: 'Verifica reCAPTCHA richiesta' });
       }
 
-      // Registrazione pubblica: sempre con ruolo ARTIST
+      // Registrazione pubblica: sempre con ruolo ARTIST, senza gruppo assegnato
       const user = await AuthService.createUser({
         email,
         password,
         first_name,
         last_name,
         phone,
-        role: 'ARTIST',
-        selectedGroups: [selectedGroup]
+        role: 'ARTIST'
       });
 
       res.status(201).json({ 
-        message: 'Registrazione completata con successo! Ora puoi effettuare il login.',
+        message: 'Registrazione completata con successo! Un amministratore ti assegnerà al gruppo appropriato e riceverai una notifica via email.',
         user: {
           id: user.id,
           email: user.email,

@@ -28,6 +28,7 @@ model User {
   user_groups   UserGroup[]
   created_events Event[]
   availability  Availability[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -104,6 +105,27 @@ model Availability {
 
   @@unique([user_id, group_id, date])
   @@map("availability")
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  user_id     String?           // null = notifica per tutti gli admin
+  is_read     Boolean           @default(false)
+  created_at  DateTime          @default(now())
+  data        Json?             // dati aggiuntivi (es. user_id per nuove registrazioni)
+  
+  user        User?             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  NEW_USER_REGISTRATION
+  ACCOUNT_ACTIVATION
+  SYSTEM_ALERT
 }
 
 enum UserRole {

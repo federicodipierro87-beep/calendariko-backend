@@ -9,6 +9,7 @@ import groupRoutes from './routes/group.routes';
 import eventRoutes from './routes/events';
 import availabilityRoutes from './routes/availability.routes';
 import emailRoutes from './routes/email.routes';
+import notificationRoutes from './routes/notification.routes';
 import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
@@ -67,6 +68,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
