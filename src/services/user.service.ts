@@ -115,4 +115,26 @@ export class UserService {
 
     return { message: 'Password updated successfully' };
   }
+
+  static async getUsersWithoutGroup() {
+    return await prisma.user.findMany({
+      where: {
+        user_groups: {
+          none: {}
+        },
+        role: 'ARTIST' // Solo artisti senza gruppo
+      },
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        phone: true,
+        created_at: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+  }
 }

@@ -109,4 +109,17 @@ export class UserController {
       res.status(500).json({ error: (error as Error).message });
     }
   }
+
+  static async getUsersWithoutGroup(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono visualizzare questa informazione' });
+      }
+
+      const users = await UserService.getUsersWithoutGroup();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
 }

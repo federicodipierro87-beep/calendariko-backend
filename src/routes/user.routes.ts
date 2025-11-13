@@ -5,6 +5,7 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 const router = Router();
 
 router.get('/', authenticateToken, requireAdmin, UserController.getAllUsers);
+router.get('/without-group', authenticateToken, requireAdmin, UserController.getUsersWithoutGroup);
 router.get('/:id', authenticateToken, UserController.getUserById);
 router.put('/:id', authenticateToken, UserController.updateUser);
 router.delete('/:id', authenticateToken, requireAdmin, UserController.deleteUser);
