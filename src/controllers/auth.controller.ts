@@ -15,6 +15,7 @@ export class AuthController {
       const result = await AuthService.login(email, password, recaptchaToken);
       res.json(result);
     } catch (error) {
+      console.log('🔍 AUTH CONTROLLER LOGIN ERROR:', (error as Error).message);
       res.status(401).json({ error: (error as Error).message });
     }
   }
