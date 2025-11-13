@@ -40,9 +40,10 @@ export class AuthService {
     
     console.log('🔍 USER FOUND - Failed attempts:', user.failed_login_attempts, 'Account locked:', user.account_locked);
 
-    // Controlla se l'account è bloccato
+    // Controlla se l'account è bloccato PRIMA di tutto
     if (user.account_locked) {
-      throw new Error('Account disabilitato. Contatta un amministratore per la riattivazione.');
+      console.log('🔍 ACCOUNT LOCKED - Throwing error');
+      throw new Error('Account disabilitato dopo troppi tentativi falliti. Contatta un amministratore per la riattivazione.');
     }
 
     // Verifica se serve reCAPTCHA (dopo 3 tentativi falliti)
