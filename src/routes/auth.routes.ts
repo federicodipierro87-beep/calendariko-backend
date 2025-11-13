@@ -52,4 +52,35 @@ router.post('/admin-migrate', async (req, res) => {
   }
 });
 
+// ENDPOINT TEMPORANEO PER VERIFICARE UTENTE
+router.get('/check-user/:email', async (req, res) => {
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    const user = await prisma.user.findUnique({
+      where: { email: req.params.email },
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        failed_login_attempts: true,
+        account_locked: true,
+        created_at: true
+      }
+    });
+    
+    await prisma.$disconnect();
+    
+    res.json({ 
+      exists: !!user,
+      user: user || null
+    });
+    
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
