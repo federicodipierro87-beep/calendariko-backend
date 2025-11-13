@@ -15,6 +15,10 @@ export class UserService {
         role: true,
         avatar_url: true,
         created_at: true,
+        failed_login_attempts: true,
+        account_locked: true,
+        locked_at: true,
+        last_failed_attempt: true,
         user_groups: {
           include: {
             group: {
