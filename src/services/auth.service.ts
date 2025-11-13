@@ -168,7 +168,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new Error('User already exists');
+      throw new Error('Esiste già un utente registrato con questa email');
     }
 
     const password_hash = await bcrypt.hash(userData.password, 12);
