@@ -137,12 +137,36 @@ export class GroupService {
       throw new Error('User is already a member of this group');
     }
 
-    return await prisma.userGroup.create({
+    // Prima di creare la membership, controlliamo se c'è una notifica per questo utente
+    const newUserNotification = await prisma.notification.findFirst({
+      where: {
+        type: 'NEW_USER_REGISTRATION',
+        is_read: false,
+        data: {
+          path: ['newUserId'],
+          equals: userId
+        }
+      }
+    });
+
+    // Crea la membership
+    const membership = await prisma.userGroup.create({
       data: {
         group_id: groupId,
         user_id: userId
       }
     });
+
+    // Se esiste una notifica non letta per questo utente, marcala come letta
+    if (newUserNotification) {
+      await prisma.notification.update({
+        where: { id: newUserNotification.id },
+        data: { is_read: true }
+      });
+      console.log(`✅ Marcata come letta notifica ${newUserNotification.id} per utente ${userId}`);
+    }
+
+    return membership;
   }
 
   static async removeMemberFromGroup(groupId: string, userId: string) {
