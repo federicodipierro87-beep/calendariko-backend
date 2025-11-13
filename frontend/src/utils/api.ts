@@ -13,7 +13,6 @@ class ApiError extends Error {
 const refreshToken = async (): Promise<string | null> => {
   try {
     const refreshTokenValue = localStorage.getItem('refreshToken');
-    console.log('Tentativo di refresh con token:', refreshTokenValue ? 'presente' : 'mancante');
     
     if (!refreshTokenValue) {
       throw new Error('No refresh token available');
@@ -29,12 +28,10 @@ const refreshToken = async (): Promise<string | null> => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      console.error('Refresh failed:', response.status, errorData);
       throw new Error(`Failed to refresh token: ${errorData.error}`);
     }
 
     const data = await response.json();
-    console.log('Refresh completato con successo');
     
     // Salva i nuovi token
     localStorage.setItem('accessToken', data.accessToken);
@@ -44,7 +41,6 @@ const refreshToken = async (): Promise<string | null> => {
 
     return data.accessToken;
   } catch (error) {
-    console.error('Errore durante il refresh:', error);
     // Se il refresh fallisce, rimuovi tutti i token e forza il logout
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -63,7 +59,6 @@ export const apiCall = async (
   
   // Aggiungi il token di autorizzazione
   let accessToken = localStorage.getItem('accessToken');
-  console.log('Chiamata API a:', url, 'con token:', accessToken ? `presente (${accessToken.substring(0, 20)}...)` : 'mancante');
   
   const headers = {
     'Content-Type': 'application/json',
@@ -81,36 +76,31 @@ export const apiCall = async (
 
   try {
     let response = await fetch(url, requestOptions);
-    console.log('Risposta API:', response.status, response.statusText);
 
-    // Se ricevo 401 (token scaduto), provo a fare il refresh
+    // Se ricevo 401, verifica se è un errore di login o token scaduto
     if (response.status === 401) {
-      console.log('Token scaduto, tentativo di refresh...');
-      
-      const newAccessToken = await refreshToken();
-      if (newAccessToken) {
-        console.log('Nuovo token ottenuto, riprovo la chiamata...');
-        // Riprovo la chiamata con il nuovo token
-        (requestOptions.headers as any)['Authorization'] = `Bearer ${newAccessToken}`;
-        response = await fetch(url, requestOptions);
-        console.log('Seconda risposta API:', response.status, response.statusText);
-      } else {
-        throw new ApiError(401, 'Authentication failed');
+      // Per il login, non fare refresh - passa direttamente l'errore
+      if (!url.includes('/auth/login')) {
+        const newAccessToken = await refreshToken();
+        if (newAccessToken) {
+          // Riprova la chiamata con il nuovo token
+          (requestOptions.headers as any)['Authorization'] = `Bearer ${newAccessToken}`;
+          response = await fetch(url, requestOptions);
+        } else {
+          throw new ApiError(401, 'Authentication failed');
+        }
       }
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      console.error('API Error:', response.status, errorData);
-      console.error('Full error details:', JSON.stringify(errorData, null, 2));
-      throw new ApiError(response.status, errorData.error || errorData.message || 'Request failed');
+      const errorMsg = errorData.error || errorData.message || 'Request failed';
+      throw new ApiError(response.status, errorMsg);
     }
 
     const responseData = await response.json();
-    console.log('API Success:', responseData);
     return responseData;
   } catch (error) {
-    console.error('API Call Error:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -194,6 +184,7 @@ export const usersApi = {
   unlock: (id: string) => apiCall(`/users/${id}/unlock`, {
     method: 'POST',
   }),
+  getUsersWithoutGroup: () => apiCall('/users/without-group'),
 };
 
 export const availabilityApi = {
@@ -222,4 +213,24 @@ export const availabilityApi = {
     method: 'DELETE',
   }),
   getGroupAvailabilityOverview: (groupId: string) => apiCall(`/availability/group/${groupId}/overview`),
+};
+
+export const notificationsApi = {
+  getAll: () => apiCall('/notifications'),
+  markAsRead: (id: string) => apiCall(`/notifications/${id}/read`, {
+    method: 'PUT',
+  }),
+  markAllAsRead: () => apiCall('/notifications/mark-all-read', {
+    method: 'PUT',
+  }),
+  delete: (id: string) => apiCall(`/notifications/${id}`, {
+    method: 'DELETE',
+  }),
+  getUnreadCount: () => apiCall('/notifications/unread-count'),
+};
+
+export const adminApi = {
+  applySchema: () => apiCall('/admin/apply-schema', {
+    method: 'POST',
+  }),
 };
