@@ -35,7 +35,7 @@ export class AuthService {
 
     if (!user) {
       console.log('🔍 USER NOT FOUND - Email:', email);
-      throw new Error('USER_NOT_FOUND');
+      throw new Error('Credenziali non valide - utente non trovato');
     }
     
     console.log('🔍 USER FOUND - Failed attempts:', user.failed_login_attempts, 'Account locked:', user.account_locked);
