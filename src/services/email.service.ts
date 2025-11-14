@@ -6,8 +6,10 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_L49fsCEj_55JNZggeooj
 // Domain verificato per Resend (dominio personalizzato)
 const FROM_EMAIL = 'Calendariko <noreply@easysolution-dp.com>';
 
-// URL dell'applicazione frontend  
-const APP_URL = process.env.FRONTEND_URL || 'https://calendariko.easysolution-dp.com';
+// URL dell'applicazione frontend
+const APP_URL = (process.env.FRONTEND_URL && process.env.FRONTEND_URL !== 'https://your-frontend-domain.vercel.app') 
+  ? process.env.FRONTEND_URL 
+  : 'https://calendariko.easysolution-dp.com';
 
 // Verifica la configurazione email solo se richiesto (non all'avvio)
 export const verifyEmailConfig = async (): Promise<boolean> => {
