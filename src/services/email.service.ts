@@ -7,7 +7,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_L49fsCEj_55JNZggeooj
 const FROM_EMAIL = 'Calendariko <noreply@easysolution-dp.com>';
 
 // URL dell'applicazione frontend
-const APP_URL = process.env.FRONTEND_URL || 'https://zingy-hamster-f25654.netlify.app';
+const APP_URL = process.env.FRONTEND_URL || 'https://calendariko.easysolution-dp.com';
 
 // Verifica la configurazione email solo se richiesto (non all'avvio)
 export const verifyEmailConfig = async (): Promise<boolean> => {
