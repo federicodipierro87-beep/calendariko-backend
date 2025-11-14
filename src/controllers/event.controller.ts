@@ -222,19 +222,23 @@ export class EventController {
       // Invio email DOPO aver risposto al client
       res.json(updatedEvent);
       
-      // Email inviate dopo la risposta per non bloccare
+      // Email inviate in background per non rallentare la risposta
       if (group_id || originalEvent.group_id) {
-        console.log('📧 Sending modification emails post-response');
-        setTimeout(async () => {
+        console.log('📧 Sending modification emails in background');
+        setImmediate(async () => {
           try {
+            console.log('📧 Invio notifiche email per evento modificato...');
+            
             const groupWithMembers = await GroupService.getGroupById(group_id || originalEvent.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
+              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              
               for (const membership of groupWithMembers.user_groups) {
                 try {
                   await sendEventNotification({
                     to: membership.user.email,
                     userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                    eventTitle: updatedEvent.title, // Rimuovo [MODIFICATO] dal titolo
+                    eventTitle: updatedEvent.title,
                     eventDate: updatedEvent.date.toLocaleDateString('it-IT'),
                     eventTime: updatedEvent.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                     venueName: updatedEvent.venue_name,
@@ -242,18 +246,21 @@ export class EventController {
                     groupName: groupWithMembers.name,
                     creatorName: 'Admin',
                     notes: `Evento modificato dall'amministratore. ${updatedEvent.notes || 'Nessuna nota aggiuntiva'}`,
-                    eventType: 'modified' // Aggiungo il tipo per l'intestazione corretta
+                    eventType: 'modified'
                   });
                   console.log(`✅ Modification email sent to ${membership.user.email}`);
-                } catch (error) {
-                  console.error('❌ Email error:', error);
+                } catch (memberEmailError) {
+                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
                 }
               }
+              console.log('✅ Processo invio notifiche modifiche completato');
+            } else {
+              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email modifiche');
             }
-          } catch (error) {
-            console.error('❌ Group fetch error:', error);
+          } catch (emailError) {
+            console.error('❌ Errore generale invio email modifiche:', emailError);
           }
-        }, 100);
+        });
       }
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
@@ -280,19 +287,23 @@ export class EventController {
       await EventService.deleteEvent(id);
       res.json({ message: 'Event deleted successfully' });
       
-      // Email inviate dopo la risposta per non bloccare
+      // Email inviate in background per non rallentare la risposta
       if (eventToDelete.group_id) {
-        console.log('📧 Sending deletion emails post-response');
-        setTimeout(async () => {
+        console.log('📧 Sending deletion emails in background');
+        setImmediate(async () => {
           try {
+            console.log('📧 Invio notifiche email per evento cancellato...');
+            
             const groupWithMembers = await GroupService.getGroupById(eventToDelete.group_id!);
             if (groupWithMembers && groupWithMembers.user_groups) {
+              console.log(`📧 Invio email a ${groupWithMembers.user_groups.length} membri del gruppo ${groupWithMembers.name}`);
+              
               for (const membership of groupWithMembers.user_groups) {
                 try {
                   await sendEventNotification({
                     to: membership.user.email,
                     userName: `${membership.user.first_name} ${membership.user.last_name}`,
-                    eventTitle: eventToDelete.title, // Rimuovo [CANCELLATO] dal titolo
+                    eventTitle: eventToDelete.title,
                     eventDate: eventToDelete.date.toLocaleDateString('it-IT'),
                     eventTime: eventToDelete.start_time.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                     venueName: eventToDelete.venue_name,
@@ -300,18 +311,21 @@ export class EventController {
                     groupName: groupWithMembers.name,
                     creatorName: 'Admin',
                     notes: 'ATTENZIONE: Questo evento è stato cancellato dall\'amministratore.',
-                    eventType: 'cancelled' // Aggiungo il tipo per l'intestazione corretta
+                    eventType: 'cancelled'
                   });
                   console.log(`✅ Deletion email sent to ${membership.user.email}`);
-                } catch (error) {
-                  console.error('❌ Email error:', error);
+                } catch (memberEmailError) {
+                  console.error(`❌ Errore invio email a ${membership.user.email}:`, memberEmailError);
                 }
               }
+              console.log('✅ Processo invio notifiche cancellazione completato');
+            } else {
+              console.log('⚠️ Nessun membro trovato nel gruppo per l\'invio email cancellazione');
             }
-          } catch (error) {
-            console.error('❌ Group fetch error:', error);
+          } catch (emailError) {
+            console.error('❌ Errore generale invio email cancellazione:', emailError);
           }
-        }, 100);
+        });
       }
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
