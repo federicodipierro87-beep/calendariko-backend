@@ -6,6 +6,9 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_L49fsCEj_55JNZggeooj
 // Domain verificato per Resend (dominio personalizzato)
 const FROM_EMAIL = 'Calendariko <noreply@easysolution-dp.com>';
 
+// URL dell'applicazione frontend
+const APP_URL = process.env.FRONTEND_URL || 'https://zingy-hamster-f25654.netlify.app';
+
 // Verifica la configurazione email solo se richiesto (non all'avvio)
 export const verifyEmailConfig = async (): Promise<boolean> => {
   try {
@@ -232,6 +235,12 @@ export const sendEventNotification = async (data: EventNotificationData): Promis
                 
                 <p>Accedi a Calendariko per ${eventType === 'cancelled' ? 'visualizzare lo stato aggiornato del calendario' : 'confermare la tua partecipazione e visualizzare tutti i dettagli dell\'evento'}.</p>
                 
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${APP_URL}" class="button" style="background: ${config.colors.primary}; color: white; text-decoration: none; display: inline-block; padding: 15px 30px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                        📅 Accedi al Calendario
+                    </a>
+                </div>
+                
                 <div class="footer">
                     <p>Questa email è stata generata automaticamente da Calendariko.</p>
                     <p>© 2025 Calendariko - Portale Gestione Eventi per Band & DJ</p>
@@ -334,6 +343,12 @@ export const sendAvailabilityRequest = async (data: AvailabilityRequestData): Pr
                 </div>
                 
                 <p>Ti preghiamo di accedere a Calendariko per confermare la tua disponibilità il prima possibile.</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${APP_URL}" class="button" style="background: #10b981; color: white; text-decoration: none; display: inline-block; padding: 15px 30px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                        ✅ Conferma Disponibilità
+                    </a>
+                </div>
                 
                 <div class="footer">
                     <p>Questa email è stata generata automaticamente da Calendariko.</p>
@@ -619,6 +634,12 @@ export const sendWelcomeEmail = async (data: WelcomeUserData): Promise<void> => 
                 
                 <p>Inizia subito ad esplorare la piattaforma e scopri tutte le funzionalità disponibili!</p>
                 
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${APP_URL}" class="button" style="background: #8b5cf6; color: white; text-decoration: none; display: inline-block; padding: 15px 30px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                        🚀 Accedi a Calendariko
+                    </a>
+                </div>
+                
                 <div class="footer">
                     <p>Hai domande? Contatta l'amministratore del sistema.</p>
                     <p>© 2025 Calendariko - Portale Gestione Eventi per Band & DJ</p>
@@ -764,6 +785,12 @@ export const sendTestEmail = async (to: string): Promise<any> => {
                     <li>❌ Notifiche indisponibilità</li>
                     <li>⏰ Promemoria eventi</li>
                 </ul>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${APP_URL}" class="button" style="background: #3b82f6; color: white; text-decoration: none; display: inline-block; padding: 15px 30px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                        📅 Vai al Calendario
+                    </a>
+                </div>
                 
                 <div class="footer">
                     <p>Questa email è stata generata automaticamente da Calendariko.</p>
