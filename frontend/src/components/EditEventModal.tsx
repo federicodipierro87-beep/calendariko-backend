@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface Event {
   id: string;
@@ -38,6 +39,9 @@ const EditEventModal: React.FC<EditEventModalProps> = ({
   event,
   groups
 }) => {
+  // Use body scroll lock when modal is open
+  useBodyScrollLock(isOpen);
+
   const [formData, setFormData] = useState({
     title: '',
     type: 'rehearsal',

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     contact_email: '',
     contact_phone: ''
   });
+
+  // Use body scroll lock when modal is open
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 

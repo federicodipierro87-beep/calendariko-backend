@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { groupsApi, usersApi, eventsApi } from '../utils/api';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface GroupDetailModalProps {
   isOpen: boolean;
@@ -16,6 +17,9 @@ const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   currentUser,
   onGroupUpdated
 }) => {
+  // Use body scroll lock when modal is open
+  useBodyScrollLock(isOpen);
+
   const [members, setMembers] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -24,6 +25,9 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   });
   
   const [showPassword, setShowPassword] = useState(false);
+
+  // Use body scroll lock when modal is open
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 

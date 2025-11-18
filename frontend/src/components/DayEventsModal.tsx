@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface Event {
   id: string;
@@ -61,6 +62,9 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
   onCreateAvailability,
   onEditEvent
 }) => {
+  // Use body scroll lock when modal is open
+  useBodyScrollLock(isOpen);
+
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingAvailability, setIsCreatingAvailability] = useState(false);
   const [newEvent, setNewEvent] = useState({

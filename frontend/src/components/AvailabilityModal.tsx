@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { availabilityApi } from '../utils/api';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface AvailabilityModalProps {
   isOpen: boolean;
@@ -16,6 +17,9 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
   userGroups,
   onDataChanged
 }) => {
+  // Use body scroll lock when modal is open
+  useBodyScrollLock(isOpen);
+
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [type, setType] = useState('AVAILABLE'); // AVAILABLE, BUSY
