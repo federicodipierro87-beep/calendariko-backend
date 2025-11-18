@@ -32,11 +32,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [eventsPerPage] = useState(10);
   const [groupsSearchTerm, setGroupsSearchTerm] = useState('');
+  const [usersSearchTerm, setUsersSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [showEditEventModal, setShowEditEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [usersWithoutGroup, setUsersWithoutGroup] = useState<any[]>([]);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  
+  // Export functionality
+  const [exportOptions, setExportOptions] = useState({
+    users: false,
+    groups: false,
+    events: false
+  });
   const [userProfile, setUserProfile] = useState({
     firstName: user.first_name || '',
     lastName: user.last_name || '',
@@ -475,6 +483,132 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   };
 
+  // Export functions
+  const convertToCSV = (data: any[], headers: string[]): string => {
+    if (data.length === 0) return headers.join(',') + '\n';
+    
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header.toLowerCase().replace(' ', '_')] || '';
+          // Escape quotes and wrap in quotes if contains comma
+          const stringValue = String(value).replace(/"/g, '""');
+          return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') 
+            ? `"${stringValue}"` 
+            : stringValue;
+        }).join(',')
+      )
+    ].join('\n');
+    
+    return csvContent;
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportUsers = () => {
+    const headers = ['ID', 'Nome', 'Cognome', 'Email', 'Telefono', 'Ruolo', 'Stato', 'Data Creazione'];
+    const userData = users.map(user => ({
+      id: user.id,
+      nome: user.first_name,
+      cognome: user.last_name,
+      email: user.email,
+      telefono: user.phone || '',
+      ruolo: user.role,
+      stato: user.is_locked ? 'Bloccato' : 'Attivo',
+      data_creazione: user.created_at ? new Date(user.created_at).toLocaleDateString('it-IT') : ''
+    }));
+    
+    const csv = convertToCSV(userData, headers);
+    downloadCSV(csv, `utenti_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const exportGroups = () => {
+    const headers = ['ID', 'Nome', 'Tipo', 'Genere', 'Descrizione', 'Email Contatto', 'Telefono', 'Membri'];
+    const groupsData = groups.map(group => ({
+      id: group.id,
+      nome: group.name,
+      tipo: group.type,
+      genere: group.genre || '',
+      descrizione: group.description || '',
+      email_contatto: group.contact_email || '',
+      telefono: group.contact_phone || '',
+      membri: group.user_groups ? group.user_groups.length : 0
+    }));
+    
+    const csv = convertToCSV(groupsData, headers);
+    downloadCSV(csv, `gruppi_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const exportFutureEvents = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const futureEvents = events.filter(event => {
+      if (!event.date) return false;
+      const eventDate = event.date.split('T')[0];
+      return eventDate >= today;
+    });
+
+    const headers = ['ID', 'Titolo', 'Data', 'Ora Inizio', 'Ora Fine', 'Tipo', 'Locale', 'Città', 'Gruppo', 'Cachet', 'Contatto', 'Note'];
+    const eventsData = futureEvents.map(event => {
+      const group = groups.find(g => g.id === event.group_id);
+      return {
+        id: event.id,
+        titolo: event.title,
+        data: event.date ? new Date(event.date).toLocaleDateString('it-IT') : '',
+        ora_inizio: event.start_time || event.time || '',
+        ora_fine: event.end_time || event.endTime || '',
+        tipo: event.event_type || event.type || '',
+        locale: event.venue_name || event.venue || '',
+        città: event.venue_city || '',
+        gruppo: group ? group.name : '',
+        cachet: event.fee ? `€${event.fee}` : '',
+        contatto: event.contact_responsible || '',
+        note: event.notes || ''
+      };
+    });
+    
+    const csv = convertToCSV(eventsData, headers);
+    downloadCSV(csv, `eventi_futuri_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const handleExport = () => {
+    const selectedCount = Object.values(exportOptions).filter(Boolean).length;
+    
+    if (selectedCount === 0) {
+      alert('⚠️ Seleziona almeno una opzione da esportare');
+      return;
+    }
+
+    let exportedItems: string[] = [];
+
+    if (exportOptions.users) {
+      exportUsers();
+      exportedItems.push('Utenti');
+    }
+
+    if (exportOptions.groups) {
+      exportGroups();
+      exportedItems.push('Gruppi');
+    }
+
+    if (exportOptions.events) {
+      exportFutureEvents();
+      exportedItems.push('Eventi futuri');
+    }
+
+    alert(`✅ Export completato per: ${exportedItems.join(', ')}`);
+  };
+
   const handleApplySchema = async () => {
     if (!window.confirm('Applicare lo schema delle notifiche al database? Questa operazione creerà la tabella notifications se non esiste.')) {
       return;
@@ -489,6 +623,18 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     } catch (error: any) {
       console.error('Errore nell\'applicazione dello schema:', error);
       alert(`❌ Errore nell'applicazione dello schema: ${error.message}`);
+    }
+  };
+
+  const reloadNotificationsCount = async () => {
+    if (user.role === 'ADMIN') {
+      try {
+        const notificationsCount = await notificationsApi.getUnreadCount();
+        setUnreadNotificationsCount(notificationsCount.count || 0);
+      } catch (error) {
+        console.error('Errore nel ricaricamento contatore notifiche:', error);
+        setUnreadNotificationsCount(0);
+      }
     }
   };
 
@@ -774,6 +920,92 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     </div>
                   </div>
 
+                  {/* Blocco Esporta */}
+                  {user.role === 'ADMIN' && (
+                    <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+                      <h4 className="text-blue-800 font-medium text-lg mb-3">📊 Esporta Dati</h4>
+                      <p className="text-blue-700 mb-4 text-sm">
+                        Esporta i dati del sistema in formato CSV per analisi esterne o backup.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        {/* Opzioni di esportazione */}
+                        <div className="space-y-3">
+                          <h5 className="font-medium text-gray-900 text-sm">Seleziona cosa esportare:</h5>
+                          
+                          <div className="space-y-2">
+                            <label className="flex items-center space-x-3 cursor-pointer p-3 bg-white rounded-lg border hover:bg-blue-25 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={exportOptions.users}
+                                onChange={(e) => setExportOptions({...exportOptions, users: e.target.checked})}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">👥 Lista Utenti</div>
+                                <div className="text-sm text-gray-600">
+                                  Esporta tutti gli utenti registrati ({users.length} totali)
+                                </div>
+                              </div>
+                            </label>
+                            
+                            <label className="flex items-center space-x-3 cursor-pointer p-3 bg-white rounded-lg border hover:bg-blue-25 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={exportOptions.groups}
+                                onChange={(e) => setExportOptions({...exportOptions, groups: e.target.checked})}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">🎵 Lista Gruppi</div>
+                                <div className="text-sm text-gray-600">
+                                  Esporta tutti i gruppi musicali ({groups.length} totali)
+                                </div>
+                              </div>
+                            </label>
+                            
+                            <label className="flex items-center space-x-3 cursor-pointer p-3 bg-white rounded-lg border hover:bg-blue-25 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={exportOptions.events}
+                                onChange={(e) => setExportOptions({...exportOptions, events: e.target.checked})}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">📅 Eventi Futuri</div>
+                                <div className="text-sm text-gray-600">
+                                  Esporta solo eventi che devono ancora svolgersi ({events.filter(e => e.date && e.date.split('T')[0] >= new Date().toISOString().split('T')[0]).length} totali)
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                        
+                        {/* Pulsante Export */}
+                        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-blue-200">
+                          <button
+                            onClick={handleExport}
+                            disabled={!Object.values(exportOptions).some(Boolean)}
+                            className="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-base flex items-center justify-center gap-2"
+                          >
+                            <span>📥</span>
+                            Esporta Selezionati
+                          </button>
+                          <button
+                            onClick={() => setExportOptions({users: false, groups: false, events: false})}
+                            className="flex-1 sm:flex-none bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium text-base"
+                          >
+                            🔄 Deseleziona Tutto
+                          </button>
+                        </div>
+                        
+                        <div className="text-xs text-blue-600 bg-blue-100 p-3 rounded-lg">
+                          💡 I file CSV verranno scaricati nella cartella Downloads del tuo browser
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Stato Sistema */}
                   <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-4">
                     <h4 className="text-gray-800 font-medium text-lg mb-2">✅ Stato Sistema</h4>
@@ -861,36 +1093,54 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                 key={group.id} 
                                 className="bg-white p-4 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
                               >
-                                <div className="flex justify-between items-start">
+                                {/* Layout ottimizzato per mobile */}
+                                <div className="space-y-3">
+                                  {/* Nome band più grande e prominente */}
                                   <div 
-                                    className="flex-1 cursor-pointer"
+                                    className="cursor-pointer"
                                     onClick={() => handleGroupClick(group)}
                                   >
-                                    <h5 className="font-medium text-gray-900">{group.name}</h5>
-                                    <div className="text-sm text-gray-600">
-                                      <span className={`px-2 py-1 rounded text-xs ${
+                                    <h5 className="font-semibold text-lg text-gray-900 mb-2">{group.name}</h5>
+                                    
+                                    {/* Tipo e genere su riga separata */}
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
                                         group.type === 'BAND' ? 'bg-purple-100 text-purple-700' :
                                         group.type === 'DJ' ? 'bg-blue-100 text-blue-700' :
                                         'bg-green-100 text-green-700'
                                       }`}>
                                         {group.type === 'BAND' ? 'Band' : group.type === 'DJ' ? 'DJ' : 'Solista'}
                                       </span>
-                                      {group.genre && <span className="ml-2">• {group.genre}</span>}
-                                      {isUserMember && <span className="ml-2 text-green-600">• Membro</span>}
+                                      {group.genre && (
+                                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                          🎵 {group.genre}
+                                        </span>
+                                      )}
+                                      {isUserMember && (
+                                        <span className="px-2 py-1 bg-green-100 text-green-600 rounded text-xs font-medium">
+                                          ✅ Membro
+                                        </span>
+                                      )}
                                     </div>
+
+                                    {/* Descrizione se presente */}
                                     {group.description && (
-                                      <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+                                      <p className="text-sm text-gray-600 mb-2 leading-relaxed">{group.description}</p>
                                     )}
+
+                                    {/* Numero membri */}
                                     {group.user_groups && (
-                                      <div className="text-xs text-gray-500 mt-1">
-                                        👥 {group.user_groups.length} membri
+                                      <div className="text-sm text-gray-500 mb-2">
+                                        👥 {group.user_groups.length} {group.user_groups.length === 1 ? 'membro' : 'membri'}
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 ml-4">
+
+                                  {/* Pulsanti sotto il nome - layout ottimizzato per mobile */}
+                                  <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
                                     <button
                                       onClick={() => handleGroupClick(group)}
-                                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+                                      className="flex-1 min-w-[120px] px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
                                       title="Visualizza dettagli gruppo"
                                     >
                                       👁️ Visualizza
@@ -901,7 +1151,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                           e.stopPropagation();
                                           handleDeleteGroup(group.id, group.name);
                                         }}
-                                        className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition-colors"
+                                        className="flex-1 min-w-[120px] px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
                                         title="Elimina gruppo"
                                       >
                                         🗑️ Elimina
@@ -1143,72 +1393,132 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     <p className="text-yellow-700 mb-4">
                       Gestisci account utente, assegna ruoli e controlla i permessi di accesso.
                     </p>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {users.map((userItem) => (
-                        <div key={userItem.id} className={`p-3 rounded border flex justify-between items-center ${
-                          userItem.account_locked ? 'bg-red-50 border-red-200' : 'bg-white'
-                        }`}>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <strong>{userItem.first_name} {userItem.last_name}</strong>
-                              <span>-</span>
-                              <span>{userItem.email}</span>
+                    
+                    {/* Campo di ricerca utenti */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        placeholder="🔍 Cerca utente per nome, cognome, email o ruolo..."
+                        value={usersSearchTerm}
+                        onChange={(e) => setUsersSearchTerm(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {(() => {
+                        // Filtra gli utenti in base alla ricerca
+                        let filteredUsers = users;
+                        
+                        // Applica filtro di ricerca
+                        if (usersSearchTerm.trim()) {
+                          filteredUsers = users.filter(userItem =>
+                            userItem.first_name.toLowerCase().includes(usersSearchTerm.toLowerCase()) ||
+                            userItem.last_name.toLowerCase().includes(usersSearchTerm.toLowerCase()) ||
+                            userItem.email.toLowerCase().includes(usersSearchTerm.toLowerCase()) ||
+                            userItem.role.toLowerCase().includes(usersSearchTerm.toLowerCase()) ||
+                            (userItem.phone && userItem.phone.toLowerCase().includes(usersSearchTerm.toLowerCase()))
+                          );
+                        }
+                        
+                        return filteredUsers.length === 0 ? (
+                          <div className="bg-white p-3 rounded border text-center text-gray-500">
+                            {usersSearchTerm.trim() ? 'Nessun utente trovato per la ricerca' : 'Nessun utente trovato'}
+                          </div>
+                        ) : (
+                          filteredUsers.map((userItem) => (
+                            <div 
+                              key={userItem.id} 
+                              className={`p-4 rounded border transition-colors ${
+                                userItem.account_locked ? 'bg-red-50 border-red-200 hover:bg-red-100' : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                          {/* Layout ottimizzato per mobile */}
+                          <div className="space-y-3">
+                            {/* Nome utente più grande e prominente - come nei gruppi */}
+                            <div>
+                              <h5 className="font-semibold text-lg text-gray-900 mb-2">{userItem.first_name} {userItem.last_name}</h5>
+                              
+                              {/* Email subito sotto il nome */}
+                              <div className="text-sm text-gray-600 mb-2">
+                                📧 {userItem.email}
+                              </div>
                             </div>
-                            <div className="text-sm text-gray-600">
-                              Ruolo: {userItem.role}
-                              {userItem.phone && ` • Tel: ${userItem.phone}`}
+
+                            {/* Informazioni utente organizzate */}
+                            <div className="space-y-2">
+                              {/* Ruolo e stato su riga separata */}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  userItem.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                                  userItem.role === 'ARTIST' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  👤 {userItem.role}
+                                </span>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  userItem.account_locked 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {userItem.account_locked ? '🔒 Bloccato' : '✅ Attivo'}
+                                </span>
+                              </div>
+
+                              {/* Telefono se presente */}
+                              {userItem.phone && (
+                                <div className="text-sm text-gray-600">
+                                  📱 {userItem.phone}
+                                </div>
+                              )}
+
+                              {/* Data creazione */}
+                              <div className="text-sm text-gray-500">
+                                📅 Creato: {new Date(userItem.created_at).toLocaleDateString('it-IT')}
+                              </div>
+
+                              {/* Informazioni di sicurezza */}
                               {userItem.failed_login_attempts > 0 && (
-                                <span className="text-orange-600">
-                                  {' • Tentativi falliti: '}
-                                  {userItem.failed_login_attempts}
-                                </span>
+                                <div className="text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                                  ⚠️ Tentativi falliti: {userItem.failed_login_attempts}
+                                </div>
                               )}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Creato: {new Date(userItem.created_at).toLocaleDateString('it-IT')}
+
+                              {/* Data blocco se presente */}
                               {userItem.locked_at && (
-                                <span className="text-red-600">
-                                  {' • Bloccato il: '}
-                                  {new Date(userItem.locked_at).toLocaleDateString('it-IT')} alle{' '}
+                                <div className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded">
+                                  🔒 Bloccato il: {new Date(userItem.locked_at).toLocaleDateString('it-IT')} alle{' '}
                                   {new Date(userItem.locked_at).toLocaleTimeString('it-IT')}
-                                </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Pulsanti sotto le informazioni - layout ottimizzato per mobile */}
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                              {userItem.account_locked && (
+                                <button
+                                  onClick={() => handleUnlockUser(userItem.id)}
+                                  className="flex-1 min-w-[120px] px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors flex items-center justify-center gap-2"
+                                  title="Sblocca utente"
+                                >
+                                  🔓 Sblocca
+                                </button>
+                              )}
+                              {userItem.id !== user.id && (
+                                <button
+                                  onClick={() => handleDeleteUser(userItem.id)}
+                                  className="flex-1 min-w-[120px] px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
+                                  title="Elimina utente"
+                                >
+                                  🗑️ Elimina
+                                </button>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              userItem.account_locked 
-                                ? 'bg-red-100 text-red-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {userItem.account_locked ? 'Bloccato' : 'Attivo'}
-                            </span>
-                            {userItem.account_locked && (
-                              <button
-                                onClick={() => handleUnlockUser(userItem.id)}
-                                className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors"
-                                title="Sblocca utente"
-                              >
-                                🔓 Sblocca
-                              </button>
-                            )}
-                            {userItem.id !== user.id && (
-                              <button
-                                onClick={() => handleDeleteUser(userItem.id)}
-                                className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 transition-colors"
-                                title="Elimina utente"
-                              >
-                                🗑️ Elimina
-                              </button>
-                            )}
-                          </div>
                         </div>
-                      ))}
-                      {users.length === 0 && (
-                        <div className="bg-white p-3 rounded border text-center text-gray-500">
-                          Nessun utente trovato
-                        </div>
-                      )}
+                          ))
+                        );
+                      })()}
                     </div>
                     <div className="flex gap-3 mt-4">
                       <button 
@@ -1229,7 +1539,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               )}
 
               {activeSection === 'notifications' && user.role === 'ADMIN' && (
-                <Notifications />
+                <Notifications onNotificationsChange={reloadNotificationsCount} />
               )}
 
               {activeSection === 'user' && (
@@ -1237,28 +1547,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
                     👤 Il Tuo Profilo
                   </h3>
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 sm:p-6">
                     <h4 className="text-slate-800 font-medium text-lg mb-3">I Tuoi Dati</h4>
                     <p className="text-slate-700 mb-6">
                       Gestisci le tue informazioni personali, dati di fatturazione e preferenze account.
                     </p>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0">
                       {/* Informazioni Personali */}
-                      <div className="bg-white rounded-lg p-6 border border-gray-200">
+                      <div className="bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
                         <h5 className="font-medium text-gray-900 mb-4 flex items-center">
                           <span className="mr-2">📝</span>
                           Informazioni Personali
                         </h5>
                         <form className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                               <input
                                 type="text"
                                 value={userProfile.firstName}
                                 onChange={(e) => handleProfileChange('firstName', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                               />
                             </div>
                             <div>
@@ -1267,107 +1577,107 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                 type="text"
                                 value={userProfile.lastName}
                                 onChange={(e) => handleProfileChange('lastName', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">📧 Email *</label>
                             <input
                               type="email"
                               value={userProfile.email}
                               onChange={(e) => handleProfileChange('email', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">📱 Telefono</label>
                             <input
                               type="tel"
                               value={userProfile.phone}
                               onChange={(e) => handleProfileChange('phone', e.target.value)}
                               placeholder="+39 123 456 7890"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Data di Nascita</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">🎂 Data di Nascita</label>
                             <input
                               type="date"
                               value={userProfile.birthDate}
                               onChange={(e) => handleProfileChange('birthDate', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                             />
                           </div>
                         </form>
                       </div>
 
                       {/* Dati di Fatturazione */}
-                      <div className="bg-white rounded-lg p-6 border border-gray-200">
+                      <div className="bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
                         <h5 className="font-medium text-gray-900 mb-4 flex items-center">
                           <span className="mr-2">🧾</span>
                           Dati di Fatturazione
                         </h5>
                         <form className="space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Ragione Sociale</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">🏢 Ragione Sociale</label>
                             <input
                               type="text"
                               value={userProfile.businessName}
                               onChange={(e) => handleProfileChange('businessName', e.target.value)}
                               placeholder="Nome azienda o nome completo"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Partita IVA / Codice Fiscale</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">🆔 Partita IVA / Codice Fiscale</label>
                             <input
                               type="text"
                               value={userProfile.vatNumber}
                               onChange={(e) => handleProfileChange('vatNumber', e.target.value)}
                               placeholder="IT12345678901"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">🏠 Indirizzo</label>
                             <input
                               type="text"
                               value={userProfile.address}
                               onChange={(e) => handleProfileChange('address', e.target.value)}
                               placeholder="Via, Piazza, ecc."
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                             />
                           </div>
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">CAP</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">📮 CAP</label>
                               <input
                                 type="text"
                                 value={userProfile.zipCode}
                                 onChange={(e) => handleProfileChange('zipCode', e.target.value)}
                                 placeholder="20100"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Città</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">🏙️ Città</label>
                               <input
                                 type="text"
                                 value={userProfile.city}
                                 onChange={(e) => handleProfileChange('city', e.target.value)}
                                 placeholder="Milano"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">🗺️ Provincia</label>
                               <input
                                 type="text"
                                 value={userProfile.province}
                                 onChange={(e) => handleProfileChange('province', e.target.value)}
                                 placeholder="MI"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                               />
                             </div>
                           </div>
@@ -1376,53 +1686,56 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     </div>
 
                     {/* Sezione Gruppi (Solo Visualizzazione) */}
-                    <div className="mt-8 bg-white rounded-lg p-6 border border-gray-200">
-                      <h5 className="font-medium text-gray-900 mb-4 flex items-center">
-                        <span className="mr-2">👥</span>
-                        I Tuoi Gruppi
-                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Solo visualizzazione</span>
+                    <div className="mt-6 bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
+                      <h5 className="font-medium text-gray-900 mb-4 flex flex-col sm:flex-row sm:items-center">
+                        <span className="flex items-center">
+                          <span className="mr-2">👥</span>
+                          I Tuoi Gruppi
+                        </span>
+                        <span className="mt-1 sm:mt-0 sm:ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded w-fit">Solo visualizzazione</span>
                       </h5>
                       <div className="space-y-3">
                         {groups.filter(group => 
                           group.user_groups?.some((ug: any) => ug.user_id === user.id)
                         ).map(group => (
-                          <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <div className="font-medium text-gray-900">{group.name}</div>
-                              <div className="text-sm text-gray-600">
-                                {group.type === 'BAND' ? 'Band' : group.type === 'DJ' ? 'DJ' : 'Solista'} 
+                          <div key={group.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg space-y-2 sm:space-y-0">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 text-base">{group.name}</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {group.type === 'BAND' ? '🎸 Band' : group.type === 'DJ' ? '🎧 DJ' : '🎤 Solista'} 
                                 {group.genre && ` • ${group.genre}`}
                               </div>
                             </div>
-                            <div className="text-sm text-gray-500">
-                              Membro
+                            <div className="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium w-fit">
+                              ✅ Membro
                             </div>
                           </div>
                         ))}
                         {groups.filter(group => 
                           group.user_groups?.some((ug: any) => ug.user_id === user.id)
                         ).length === 0 && (
-                          <div className="text-center py-4 text-gray-500">
-                            Non fai ancora parte di nessun gruppo
+                          <div className="text-center py-8 text-gray-500">
+                            <div className="text-4xl mb-2">🎵</div>
+                            <p>Non fai ancora parte di nessun gruppo</p>
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-3">
-                        Per modificare i tuoi gruppi di appartenenza, contatta l'amministratore del sistema.
+                      <p className="text-xs text-gray-500 mt-4 p-3 bg-blue-50 rounded-lg">
+                        💡 Per modificare i tuoi gruppi di appartenenza, contatta l'amministratore del sistema.
                       </p>
                     </div>
 
                     {/* Pulsanti Azione */}
-                    <div className="mt-8 flex gap-4">
+                    <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 pb-20 sm:pb-0">
                       <button 
                         onClick={handleSaveProfile}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                        className="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium text-base"
                       >
                         💾 Salva Modifiche
                       </button>
                       <button 
                         onClick={() => window.location.reload()}
-                        className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 transition-colors"
+                        className="flex-1 sm:flex-none bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium text-base"
                       >
                         🔄 Annulla
                       </button>

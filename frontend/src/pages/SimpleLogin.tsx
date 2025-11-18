@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { authApi, groupsApi } from '../utils/api';
+import React, { useState } from 'react';
+import { authApi } from '../utils/api';
 import ReCaptcha from '../components/ReCaptcha';
 
 interface SimpleLoginProps {
@@ -13,72 +13,34 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState('');
-  const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const [showRecaptcha, setShowRecaptcha] = useState(false);
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [showRecaptcha, setShowRecaptcha] = useState(() => {
+    const saved = localStorage.getItem('show_recaptcha');
+    return saved === 'true';
+  });
+  const [loginAttempts, setLoginAttempts] = useState(() => {
+    const saved = localStorage.getItem('login_attempts');
+    return saved ? parseInt(saved) : 0;
+  });
 
 
-  // Carica i gruppi disponibili quando si passa alla modalità registrazione
-  useEffect(() => {
-    console.log('🔍 useEffect trigger, isRegisterMode:', isRegisterMode);
-    if (isRegisterMode) {
-      console.log('🔍 Modalità registrazione - caricando gruppi via API');
-      loadGroups();
-    }
-  }, [isRegisterMode]);
-
-  const loadGroups = async () => {
-    try {
-      console.log('🔍 Chiamata API gruppi...');
-      console.log('🔍 Stato prima della chiamata - groups:', groups.length);
-      
-      const groupsData = await groupsApi.getPublic();
-      console.log('🔍 Dati gruppi ricevuti:', groupsData);
-      
-      if (Array.isArray(groupsData)) {
-        console.log('🔍 Chiamando setGroups...');
-        console.log('🔍 FRONTEND LOGIN - Groups received:', groupsData.length, groupsData.map((g: any) => g.id));
-        setGroups(groupsData);
-        console.log('🔍 setGroups completato');
-      } else {
-        console.error('❌ Dati gruppi non sono un array:', groupsData);
-        console.log('🔍 Chiamando setGroups con array vuoto...');
-        setGroups([]);
-        console.log('🔍 Chiamando setError...');
-        setError('Formato dati gruppi non valido');
-      }
-    } catch (error) {
-      console.error('❌ Errore nel caricamento dei gruppi:', error);
-      console.log('🔍 Gestendo errore - chiamando setGroups con array vuoto...');
-      setGroups([]);
-      console.log('🔍 Chiamando setError per errore...');
-      setError('Errore nel caricamento dei gruppi disponibili');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Previene ulteriori eventi
     setLoading(true);
     setError('');
     setSuccess('');
 
     try {
+      
       if (isRegisterMode) {
         // Registrazione
         if (!firstName || !lastName) {
           setError('Nome e cognome sono obbligatori');
-          setLoading(false);
-          return;
-        }
-        
-        if (!selectedGroup) {
-          setError('Seleziona un gruppo');
           setLoading(false);
           return;
         }
@@ -95,7 +57,6 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           first_name: firstName,
           last_name: lastName,
           phone: phone || undefined,
-          selectedGroup: selectedGroup,
           recaptchaToken: recaptchaToken
         });
         
@@ -123,6 +84,8 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
         }
 
         const data = await authApi.login(loginData);
+        
+        // Login completato con successo
         onLogin(data.user, data.accessToken, data.refreshToken);
       }
     } catch (err: any) {
@@ -132,21 +95,10 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
       // Per il login, controlla se l'errore richiede reCAPTCHA
       if (!isRegisterMode) {
         const newAttempts = loginAttempts + 1;
-        
-        // Aggiungi al log persistente
-        const logEntry = `TENTATIVO ${newAttempts}: ${errorMessage} [${new Date().toLocaleTimeString()}]`;
-        setDebugLog(prev => [...prev, logEntry]);
-        
-        console.log('🔍 LOGIN FAILED - Attempts:', newAttempts, 'Error:', errorMessage);
-        
         setLoginAttempts(newAttempts);
         
         // Mostra reCAPTCHA se l'errore lo richiede o dopo 3 tentativi
         if (errorMessage.includes('reCAPTCHA richiesta') || newAttempts >= 3) {
-          const recaptchaLogEntry = `>>> ATTIVANDO reCAPTCHA dopo ${newAttempts} tentativi [${new Date().toLocaleTimeString()}]`;
-          setDebugLog(prev => [...prev, recaptchaLogEntry]);
-          
-          console.log('🔍 SHOWING RECAPTCHA - Attempts:', newAttempts);
           setShowRecaptcha(true);
           setRecaptchaToken(null); // Reset del token
         }
@@ -162,28 +114,16 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
     setFirstName('');
     setLastName('');
     setPhone('');
-    setSelectedGroup('');
     setError('');
     setSuccess('');
     setRecaptchaToken(null);
     setShowRecaptcha(false);
     setLoginAttempts(0);
-    setDebugLog([]);
   };
 
   const toggleMode = () => {
-    console.log('🔄 Toggle mode chiamato, isRegisterMode attuale:', isRegisterMode);
-    try {
-      console.log('🔄 Chiamando clearForm...');
-      clearForm();
-      console.log('🔄 clearForm completato');
-      
-      console.log('🔄 Cambiando isRegisterMode da', isRegisterMode, 'a', !isRegisterMode);
-      setIsRegisterMode(!isRegisterMode);
-      console.log('🔄 setIsRegisterMode chiamato');
-    } catch (error) {
-      console.error('❌ ERRORE in toggleMode:', error);
-    }
+    clearForm();
+    setIsRegisterMode(!isRegisterMode);
   };
 
   return (
@@ -201,14 +141,7 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
           <div className="text-center mt-4">
             <button
               type="button"
-              onClick={() => {
-                console.log('🟢 PULSANTE CLICCATO!');
-                try {
-                  toggleMode();
-                } catch (error) {
-                  console.error('❌ ERRORE nel toggleMode:', error);
-                }
-              }}
+              onClick={toggleMode}
               className="bg-green-500 text-white px-4 py-2 sm:px-6 rounded-lg font-medium hover:bg-green-600 transition-colors text-sm sm:text-base"
             >
               {isRegisterMode ? '← Torna al Login' : '✨ Crea un nuovo account'}
@@ -298,28 +231,10 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
             )}
             
             {isRegisterMode && (
-              <div>
-                <label htmlFor="group" className="block text-sm font-medium text-gray-700">
-                  Gruppo di appartenenza *
-                </label>
-                <select
-                  id="group"
-                  name="group"
-                  required={isRegisterMode}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
-                  value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
-                >
-                  <option value="">Seleziona un gruppo...</option>
-                  {groups.map(group => (
-                    <option key={group.id} value={group.id}>
-                      {group.name} ({group.type === 'BAND' ? 'Band' : group.type === 'DJ' ? 'DJ' : group.type === 'SOLO' ? 'Solista' : group.type})
-                      {group.genre && ` - ${group.genre}`}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  Vedrai solo gli eventi di questo gruppo una volta effettuato l'accesso
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>ℹ️ Nota:</strong> Dopo la registrazione, un amministratore ti assegnerà al gruppo appropriato.
+                  Riceverai una notifica via email quando il tuo account sarà attivato.
                 </p>
               </div>
             )}
@@ -342,46 +257,14 @@ const SimpleLogin: React.FC<SimpleLoginProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Debug info */}
-          <div className="text-xs text-center text-gray-500 mb-2 p-2 border border-gray-300">
-            DEBUG: isRegisterMode={isRegisterMode.toString()}, showRecaptcha={showRecaptcha.toString()}, attempts={loginAttempts}
-            <br />
-            Condition: (isRegisterMode || showRecaptcha) = {(isRegisterMode || showRecaptcha).toString()}
-            <br />
-            reCAPTCHA token: {recaptchaToken ? 'presente' : 'null'}
-          </div>
-
-          {/* Log persistente dei tentativi */}
-          {debugLog.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-300 p-3 mb-4 rounded">
-              <h4 className="font-bold text-yellow-800 mb-2">🔍 LOG TENTATIVI LOGIN:</h4>
-              {debugLog.map((log, index) => (
-                <div key={index} className="text-xs text-yellow-700 mb-1 font-mono">
-                  {log}
-                </div>
-              ))}
-            </div>
-          )}
 
           {/* reCAPTCHA: sempre in registrazione, in login solo se richiesto */}
           {(isRegisterMode || showRecaptcha) && (
-            <div className="border-2 border-red-500 p-4 bg-red-50">
-              <p className="text-red-600 text-sm text-center font-bold mb-2">
-                🔍 reCAPTCHA SECTION VISIBLE - Mode: {isRegisterMode ? 'REGISTER' : 'LOGIN'}, showRecaptcha: {showRecaptcha.toString()}
-              </p>
+            <div>
               <ReCaptcha 
-                onVerify={(token) => {
-                  console.log('🔍 reCAPTCHA token received:', token ? 'valid token' : 'null');
-                  setRecaptchaToken(token);
-                }}
-                onExpired={() => {
-                  console.log('🔍 reCAPTCHA expired');
-                  setRecaptchaToken(null);
-                }}
-                onError={() => {
-                  console.log('🔍 reCAPTCHA error');
-                  setRecaptchaToken(null);
-                }}
+                onVerify={(token) => setRecaptchaToken(token)}
+                onExpired={() => setRecaptchaToken(null)}
+                onError={() => setRecaptchaToken(null)}
               />
               {isRegisterMode && (
                 <p className="mt-2 text-xs text-gray-500 text-center">

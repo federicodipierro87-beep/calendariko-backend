@@ -9,18 +9,35 @@
     text-size-adjust: 100%;
   }
   
+  /* Prevent zoom on input focus on iOS */
   input, select, textarea {
     @apply text-base;
+    font-size: 16px;
   }
   
-  /* Prevent zoom on input focus on iOS */
+  /* Specific input types that need 16px to prevent zoom */
   input[type="email"], 
   input[type="password"], 
   input[type="text"], 
   input[type="tel"],
+  input[type="time"],
+  input[type="number"],
   select,
   textarea {
     font-size: 16px;
+  }
+
+  /* Viewport stability for mobile keyboards */
+  @media (max-width: 640px) {
+    html {
+      height: 100%;
+      height: -webkit-fill-available;
+    }
+    
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
   }
 }
 
@@ -39,5 +56,94 @@
     position: fixed;
     width: 100%;
     height: 100%;
+  }
+
+  /* Mobile modal optimizations */
+  @media (max-width: 640px) {
+    .mobile-modal-container {
+      /* Keep modal centered and stable during keyboard events */
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      padding-bottom: 80px; /* Space for bottom navigation */
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    
+    .mobile-form-safe-area {
+      /* Add extra bottom margin for forms */
+      margin-bottom: 100px;
+    }
+
+    /* Prevent iOS Safari from shifting modal */
+    .viewport-stable {
+      position: relative;
+      max-height: 75vh !important;
+      transform: none !important;
+    }
+  }
+
+  /* Smooth viewport transitions on keyboard open/close */
+  @supports (-webkit-touch-callout: none) {
+    .viewport-stable {
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+
+    /* Additional iOS fixes for modal stability */
+    @media (max-width: 640px) {
+      .mobile-modal-container {
+        /* Force stable positioning on iOS */
+        position: fixed !important;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+
+      .viewport-stable {
+        /* Prevent transform issues on iOS */
+        will-change: auto;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+      }
+    }
+  }
+
+  /* Prevent modal jumping on input focus */
+  @media (max-width: 640px) {
+    input:focus,
+    textarea:focus,
+    select:focus {
+      /* Prevent viewport shifts */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+    }
+
+    /* Lock modal from horizontal dragging */
+    .viewport-stable {
+      /* Prevent horizontal scrolling and bouncing */
+      overflow-x: hidden !important;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y !important;
+      /* Lock to vertical scrolling only */
+      scroll-behavior: smooth;
+    }
+
+    /* Prevent elastic bounce on modal container */
+    .mobile-modal-container {
+      overscroll-behavior: none;
+      -webkit-overscroll-behavior: none;
+      touch-action: none;
+    }
+
+    /* Prevent any horizontal movement on form elements */
+    .mobile-form-safe-area {
+      touch-action: pan-y !important;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
   }
 }

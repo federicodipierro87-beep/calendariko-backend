@@ -43,8 +43,8 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pb-24 sm:pb-4" style={{touchAction: 'none', overscrollBehavior: 'none'}}>
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full max-h-[75vh] sm:max-h-[90vh] overflow-y-auto shadow-xl" style={{touchAction: 'pan-y', overflowX: 'hidden', position: 'relative', maxWidth: '100%'}}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
             👥 Crea Nuovo Gruppo

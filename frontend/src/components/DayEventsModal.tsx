@@ -194,8 +194,8 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pb-24 sm:pb-4 mobile-modal-container" style={{touchAction: 'none', overscrollBehavior: 'none'}}>
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[75vh] sm:max-h-[90vh] overflow-y-auto viewport-stable shadow-xl touch-manipulation" style={{touchAction: 'pan-y', overflowX: 'hidden', position: 'relative', maxWidth: '100%'}}>
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
@@ -383,79 +383,85 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
         {/* Form per creare nuovo evento - solo admin */}
         {user?.role === 'ADMIN' && isCreating ? (
           /* Form per creare nuovo evento */
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 mobile-form-safe-area">
             <h3 className="text-lg font-medium text-gray-900 mb-3">Crea Nuovo Evento</h3>
             <form onSubmit={handleCreateEvent} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Titolo Evento *
+                  🎤 Titolo Evento *
                 </label>
                 <input
                   type="text"
                   value={newEvent.title}
                   onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   placeholder="Es: Concerto Jazz Club"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Orario Inizio *
-                  </label>
-                  <input
-                    type="time"
-                    value={newEvent.time}
-                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+              {/* Orari e Tipo - Layout mobile-first */}
+              <div className="space-y-4 sm:space-y-0">
+                {/* Orari in grid su desktop, stack su mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      ⏰ Orario Inizio *
+                    </label>
+                    <input
+                      type="time"
+                      value={newEvent.time}
+                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                      className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      🏁 Orario Fine *
+                    </label>
+                    <input
+                      type="time"
+                      value={newEvent.endTime}
+                      onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                      className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                      required
+                    />
+                  </div>
                 </div>
 
+                {/* Tipo evento - Full width per migliore touch */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Orario Fine *
-                  </label>
-                  <input
-                    type="time"
-                    value={newEvent.endTime}
-                    onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tipo
+                    🎯 Tipo Evento *
                   </label>
                   <select
                     value={newEvent.type}
                     onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   >
-                    <option value="availability">Confermata</option>
-                    <option value="rehearsal">Opzionata</option>
+                    <option value="availability">✅ Confermata (Data fissa)</option>
+                    <option value="rehearsal">🎵 Opzionata (Da confermare)</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gruppo/Artista *
+                  👥 Gruppo/Artista *
                 </label>
                 <select
                   value={newEvent.group_id}
                   onChange={(e) => setNewEvent({ ...newEvent, group_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   required
                 >
-                  <option value="">Seleziona gruppo/artista</option>
+                  <option value="">💫 Seleziona gruppo/artista</option>
                   {groups.map(group => (
                     <option key={group.id} value={group.id}>
                       {group.name} ({group.type === 'BAND' ? 'Band' : group.type === 'DJ' ? 'DJ' : 'Solista'})
+                      {group.genre && ` - ${group.genre}`}
                     </option>
                   ))}
                 </select>
@@ -463,13 +469,13 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Locale
+                  📍 Locale
                 </label>
                 <input
                   type="text"
                   value={newEvent.venue}
                   onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   placeholder="Es: Jazz Club Milano"
                 />
               </div>
@@ -486,7 +492,7 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                     min="0"
                     value={newEvent.fee}
                     onChange={(e) => setNewEvent({ ...newEvent, fee: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                     placeholder="Es: 500.00"
                   />
                 </div>
@@ -500,35 +506,35 @@ const DayEventsModal: React.FC<DayEventsModalProps> = ({
                   type="text"
                   value={newEvent.contact_responsible}
                   onChange={(e) => setNewEvent({ ...newEvent, contact_responsible: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   placeholder="Es: Mario Rossi, 329-1234567"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Note
+                  📝 Note
                 </label>
                 <textarea
                   value={newEvent.notes}
                   onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                   rows={3}
-                  placeholder="Note aggiuntive..."
+                  placeholder="Note aggiuntive sull'evento..."
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 mt-6 border-t border-gray-200">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                  className="flex-1 bg-blue-600 text-white py-4 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-base"
                 >
                   ✅ Crea Evento
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                  className="flex-1 bg-gray-300 text-gray-700 py-4 px-4 rounded-lg hover:bg-gray-400 transition-colors font-medium text-base"
                 >
                   ❌ Annulla
                 </button>
