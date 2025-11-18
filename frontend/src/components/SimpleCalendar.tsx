@@ -203,8 +203,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
 
         {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex min-h-full">
             {/* Colonna ore */}
             <div className="w-16 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
@@ -219,14 +219,14 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
             {/* Colonne giorni */}
             {weekDates.map((date, dayIndex) => {
               const dayEvents = getEventsForDate(date);
-              console.log(`Day ${dayIndex}:`, date.toISOString().split('T')[0], 'Events:', dayEvents);
+              console.log(`Week Day ${dayIndex}:`, date.toISOString().split('T')[0], 'Events:', dayEvents);
               
               return (
                 <div key={dayIndex} className="flex-1 border-r relative">
                   {hours.map(hour => (
                     <div 
                       key={hour} 
-                      className="h-12 border-b hover:bg-blue-25 cursor-pointer"
+                      className="h-12 border-b hover:bg-blue-50 cursor-pointer"
                       onClick={() => onDayClick && onDayClick(date.toISOString().split('T')[0])}
                     ></div>
                   ))}
@@ -298,8 +298,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
 
         {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex min-h-full">
             {/* Colonna ore */}
             <div className="w-20 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
@@ -316,7 +316,7 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
               {hours.map(hour => (
                 <div 
                   key={hour} 
-                  className="h-16 border-b hover:bg-blue-25 cursor-pointer"
+                  className="h-16 border-b hover:bg-blue-50 cursor-pointer"
                   onClick={() => onDayClick && onDayClick(currentDate.toISOString().split('T')[0])}
                 ></div>
               ))}
@@ -511,11 +511,11 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
           </div>
         </>
       ) : currentView === 'week' ? (
-        <div className="border rounded-lg overflow-hidden" style={{height: '500px'}}>
+        <div className="border rounded-lg overflow-hidden h-[600px]">
           {renderWeekView()}
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden" style={{height: '500px'}}>
+        <div className="border rounded-lg overflow-hidden h-[600px]">
           {renderDayView()}
         </div>
       )}
