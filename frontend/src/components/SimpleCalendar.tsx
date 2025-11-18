@@ -182,7 +182,7 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     return (
-      <div className="flex flex-col max-h-[600px] overflow-hidden">
+      <div className="flex flex-col h-full">
         {/* Header giorni della settimana */}
         <div className="flex border-b bg-gray-50 flex-shrink-0">
           <div className="w-16 flex-shrink-0 border-r"></div>
@@ -203,8 +203,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
 
         {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="flex min-h-full">
+        <div className="flex-1 overflow-y-auto">
+          <div className="flex">
             {/* Colonna ore */}
             <div className="w-16 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
@@ -219,6 +219,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
             {/* Colonne giorni */}
             {weekDates.map((date, dayIndex) => {
               const dayEvents = getEventsForDate(date);
+              console.log(`Day ${dayIndex}:`, date.toISOString().split('T')[0], 'Events:', dayEvents);
+              
               return (
                 <div key={dayIndex} className="flex-1 border-r relative">
                   {hours.map(hour => (
@@ -231,8 +233,10 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
 
                   {/* Eventi */}
                   {dayEvents.map((event, eventIndex) => {
-                    const startHour = event.time ? parseInt(event.time.split(':')[0]) : 0;
-                    const startMinute = event.time ? parseInt(event.time.split(':')[1]) || 0 : 0;
+                    const timeStr = event.time || '00:00';
+                    const [hourStr, minuteStr] = timeStr.split(':');
+                    const startHour = parseInt(hourStr) || 0;
+                    const startMinute = parseInt(minuteStr) || 0;
                     const topPosition = (startHour * 48) + (startMinute * 48 / 60);
 
                     const getEventColor = (type: string) => {
@@ -246,12 +250,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
 
                     return (
                       <div
-                        key={event.id}
+                        key={`${event.id}-${eventIndex}`}
                         className={`absolute left-1 right-1 ${getEventColor(event.type)} text-white text-xs p-1 rounded shadow z-10`}
                         style={{ 
                           top: `${topPosition}px`,
                           height: '40px'
                         }}
+                        title={`${event.title} - ${formatTime(event.time)}`}
                       >
                         <div className="font-medium truncate">
                           {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
@@ -272,9 +277,10 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
   const renderDayView = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const dayEvents = getEventsForDate(currentDate);
+    console.log('Day view events:', dayEvents);
 
     return (
-      <div className="flex flex-col max-h-[600px] overflow-hidden">
+      <div className="flex flex-col h-full">
         {/* Header giorno */}
         <div className="flex border-b bg-gray-50 p-4 flex-shrink-0">
           <div className="text-center">
@@ -292,8 +298,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
 
         {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="flex min-h-full">
+        <div className="flex-1 overflow-y-auto">
+          <div className="flex">
             {/* Colonna ore */}
             <div className="w-20 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
@@ -317,8 +323,10 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
 
               {/* Eventi */}
               {dayEvents.map((event, eventIndex) => {
-                const startHour = event.time ? parseInt(event.time.split(':')[0]) : 0;
-                const startMinute = event.time ? parseInt(event.time.split(':')[1]) || 0 : 0;
+                const timeStr = event.time || '00:00';
+                const [hourStr, minuteStr] = timeStr.split(':');
+                const startHour = parseInt(hourStr) || 0;
+                const startMinute = parseInt(minuteStr) || 0;
                 const topPosition = (startHour * 64) + (startMinute * 64 / 60);
 
                 const getEventColor = (type: string) => {
@@ -332,12 +340,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
 
                 return (
                   <div
-                    key={event.id}
+                    key={`${event.id}-${eventIndex}`}
                     className={`absolute left-2 right-2 ${getEventColor(event.type)} text-white p-2 rounded shadow z-10`}
                     style={{ 
                       top: `${topPosition}px`,
                       height: '50px'
                     }}
+                    title={`${event.title} - ${formatTime(event.time)}`}
                   >
                     <div className="font-medium truncate">
                       {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
@@ -476,6 +485,14 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
       </div>
 
+      {/* Debug: mostra numero di eventi */}
+      {(currentView === 'week' || currentView === 'day') && (
+        <div className="mb-2 text-xs text-gray-500">
+          Eventi trovati: {currentView === 'day' ? getEventsForDate(currentDate).length : 
+            getWeekDays().reduce((total, date) => total + getEventsForDate(date).length, 0)}
+        </div>
+      )}
+
       {/* Contenuto del calendario basato sulla vista */}
       {currentView === 'month' ? (
         <>
@@ -494,9 +511,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
           </div>
         </>
       ) : currentView === 'week' ? (
-        renderWeekView()
+        <div className="border rounded-lg overflow-hidden" style={{height: '500px'}}>
+          {renderWeekView()}
+        </div>
       ) : (
-        renderDayView()
+        <div className="border rounded-lg overflow-hidden" style={{height: '500px'}}>
+          {renderDayView()}
+        </div>
       )}
 
       {/* Legenda */}
