@@ -37,7 +37,8 @@
       "Bash(grep:*)",
       "Bash(npm start)",
       "Bash(railway deploy:*)",
-      "Bash(npx netlify deploy:*)"
+      "Bash(npx netlify deploy:*)",
+      "Bash(railway logs:*)"
     ],
     "deny": [],
     "ask": [],

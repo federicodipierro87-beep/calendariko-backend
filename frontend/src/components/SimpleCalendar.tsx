@@ -182,9 +182,9 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     return (
-      <div className="flex flex-col h-[600px] overflow-hidden">
+      <div className="flex flex-col max-h-[600px] overflow-hidden">
         {/* Header giorni della settimana */}
-        <div className="flex border-b bg-gray-50">
+        <div className="flex border-b bg-gray-50 flex-shrink-0">
           <div className="w-16 flex-shrink-0 border-r"></div>
           {weekDates.map((date, index) => (
             <div key={index} className="flex-1 p-2 border-r text-center">
@@ -203,8 +203,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
 
         {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex min-h-full">
             {/* Colonna ore */}
             <div className="w-16 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
@@ -232,19 +232,30 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
                   {/* Eventi */}
                   {dayEvents.map((event, eventIndex) => {
                     const startHour = event.time ? parseInt(event.time.split(':')[0]) : 0;
-                    const startMinute = event.time ? parseInt(event.time.split(':')[1]) : 0;
-                    const topPosition = (startHour * 48) + (startMinute * 0.8);
+                    const startMinute = event.time ? parseInt(event.time.split(':')[1]) || 0 : 0;
+                    const topPosition = (startHour * 48) + (startMinute * 48 / 60);
+
+                    const getEventColor = (type: string) => {
+                      switch(type) {
+                        case 'availability-busy': return 'bg-red-500';
+                        case 'availability': return 'bg-green-500';
+                        case 'rehearsal': return 'bg-blue-500';
+                        default: return 'bg-purple-500';
+                      }
+                    };
 
                     return (
                       <div
                         key={event.id}
-                        className="absolute left-1 right-1 bg-blue-500 text-white text-xs p-1 rounded shadow z-10"
+                        className={`absolute left-1 right-1 ${getEventColor(event.type)} text-white text-xs p-1 rounded shadow z-10`}
                         style={{ 
                           top: `${topPosition}px`,
                           height: '40px'
                         }}
                       >
-                        <div className="font-medium truncate">{event.title}</div>
+                        <div className="font-medium truncate">
+                          {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
+                        </div>
                         <div className="truncate">{formatTime(event.time)}</div>
                       </div>
                     );
@@ -263,9 +274,9 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
     const dayEvents = getEventsForDate(currentDate);
 
     return (
-      <div className="flex flex-col h-[600px] overflow-hidden">
+      <div className="flex flex-col max-h-[600px] overflow-hidden">
         {/* Header giorno */}
-        <div className="flex border-b bg-gray-50 p-4">
+        <div className="flex border-b bg-gray-50 p-4 flex-shrink-0">
           <div className="text-center">
             <div className="text-sm text-gray-500 uppercase">
               {weekDays[currentDate.getDay()]}
@@ -281,8 +292,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
 
         {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex min-h-full">
             {/* Colonna ore */}
             <div className="w-20 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
@@ -307,19 +318,30 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
               {/* Eventi */}
               {dayEvents.map((event, eventIndex) => {
                 const startHour = event.time ? parseInt(event.time.split(':')[0]) : 0;
-                const startMinute = event.time ? parseInt(event.time.split(':')[1]) : 0;
-                const topPosition = (startHour * 64) + (startMinute * 1.07);
+                const startMinute = event.time ? parseInt(event.time.split(':')[1]) || 0 : 0;
+                const topPosition = (startHour * 64) + (startMinute * 64 / 60);
+
+                const getEventColor = (type: string) => {
+                  switch(type) {
+                    case 'availability-busy': return 'bg-red-500';
+                    case 'availability': return 'bg-green-500';
+                    case 'rehearsal': return 'bg-blue-500';
+                    default: return 'bg-purple-500';
+                  }
+                };
 
                 return (
                   <div
                     key={event.id}
-                    className="absolute left-2 right-2 bg-blue-500 text-white p-2 rounded shadow z-10"
+                    className={`absolute left-2 right-2 ${getEventColor(event.type)} text-white p-2 rounded shadow z-10`}
                     style={{ 
                       top: `${topPosition}px`,
                       height: '50px'
                     }}
                   >
-                    <div className="font-medium truncate">{event.title}</div>
+                    <div className="font-medium truncate">
+                      {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
+                    </div>
                     <div className="text-sm truncate">{formatTime(event.time)}</div>
                   </div>
                 );
