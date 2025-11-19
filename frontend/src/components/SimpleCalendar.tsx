@@ -182,9 +182,9 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     return (
-      <div className="flex flex-col h-full">
+      <>
         {/* Header giorni della settimana */}
-        <div className="flex border-b bg-gray-50 flex-shrink-0">
+        <div className="flex border-b bg-gray-50 flex-shrink-0 h-16">
           <div className="w-16 flex-shrink-0 border-r"></div>
           {weekDates.map((date, index) => (
             <div key={index} className="flex-1 p-2 border-r text-center">
@@ -202,10 +202,10 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
           ))}
         </div>
 
-        {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="flex min-h-full">
-            {/* Colonna ore */}
+        {/* Grid ore e eventi - Fixed height container */}
+        <div className="flex-1 overflow-y-scroll" style={{ height: 'calc(100% - 64px)' }}>
+          <div className="flex">
+            {/* Colonna ore - Fixed content height */}
             <div className="w-16 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
                 <div key={hour} className="h-12 border-b flex items-start justify-end pr-2 pt-1">
@@ -216,10 +216,9 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
               ))}
             </div>
 
-            {/* Colonne giorni */}
+            {/* Colonne giorni - Fixed content height */}
             {weekDates.map((date, dayIndex) => {
               const dayEvents = getEventsForDate(date);
-              console.log(`Week Day ${dayIndex}:`, date.toISOString().split('T')[0], 'Events:', dayEvents);
               
               return (
                 <div key={dayIndex} className="flex-1 border-r relative">
@@ -270,20 +269,19 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
             })}
           </div>
         </div>
-      </div>
+      </>
     );
   };
 
   const renderDayView = () => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const dayEvents = getEventsForDate(currentDate);
-    console.log('Day view events:', dayEvents);
 
     return (
-      <div className="flex flex-col h-full">
+      <>
         {/* Header giorno */}
-        <div className="flex border-b bg-gray-50 p-4 flex-shrink-0">
-          <div className="text-center">
+        <div className="flex border-b bg-gray-50 p-4 flex-shrink-0 h-20">
+          <div className="text-center w-full">
             <div className="text-sm text-gray-500 uppercase">
               {weekDays[currentDate.getDay()]}
             </div>
@@ -297,10 +295,10 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
           </div>
         </div>
 
-        {/* Grid ore e eventi */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="flex min-h-full">
-            {/* Colonna ore */}
+        {/* Grid ore e eventi - Fixed height container */}
+        <div className="flex-1 overflow-y-scroll" style={{ height: 'calc(100% - 80px)' }}>
+          <div className="flex">
+            {/* Colonna ore - Fixed content height */}
             <div className="w-20 flex-shrink-0 border-r bg-gray-50">
               {hours.map(hour => (
                 <div key={hour} className="h-16 border-b flex items-start justify-end pr-2 pt-1">
@@ -311,7 +309,7 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
               ))}
             </div>
 
-            {/* Colonna giorno */}
+            {/* Colonna giorno - Fixed content height */}
             <div className="flex-1 relative">
               {hours.map(hour => (
                 <div 
@@ -358,7 +356,7 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   };
 
@@ -485,13 +483,6 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
         </div>
       </div>
 
-      {/* Debug: mostra numero di eventi */}
-      {(currentView === 'week' || currentView === 'day') && (
-        <div className="mb-2 text-xs text-gray-500">
-          Eventi trovati: {currentView === 'day' ? getEventsForDate(currentDate).length : 
-            getWeekDays().reduce((total, date) => total + getEventsForDate(date).length, 0)}
-        </div>
-      )}
 
       {/* Contenuto del calendario basato sulla vista */}
       {currentView === 'month' ? (
@@ -511,12 +502,387 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
           </div>
         </>
       ) : currentView === 'week' ? (
-        <div className="border rounded-lg overflow-hidden h-[600px]">
-          {renderWeekView()}
+        <div style={{
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          backgroundColor: 'white',
+          height: '500px'
+        }}>
+          {/* Header settimana */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '80px repeat(7, 1fr)',
+            height: '60px',
+            borderBottom: '1px solid #e5e7eb',
+            backgroundColor: '#f8fafc'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              borderRight: '1px solid #e5e7eb'
+            }}>
+              Ora
+            </div>
+            {getWeekDays().map((date, index) => (
+              <div key={index} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                borderRight: index < 6 ? '1px solid #e5e7eb' : 'none'
+              }}>
+                <div style={{fontSize: '11px', color: '#6b7280', textTransform: 'uppercase'}}>
+                  {weekDays[date.getDay()]}
+                </div>
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  color: date.toDateString() === new Date().toDateString() ? '#ffffff' : '#374151',
+                  backgroundColor: date.toDateString() === new Date().toDateString() ? '#3b82f6' : 'transparent',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {date.getDate()}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Griglia calendario */}
+          <div style={{
+            height: '700px',
+            overflow: 'auto'
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '80px repeat(7, 1fr)'
+            }}>
+              {/* Colonna ore */}
+              <div style={{borderRight: '1px solid #e5e7eb', backgroundColor: '#f8fafc'}}>
+                {Array.from({ length: 17 }, (_, hour) => (
+                  <div key={hour + 7} style={{
+                    height: '60px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-end',
+                    paddingRight: '8px',
+                    paddingTop: '4px',
+                    borderBottom: '1px solid #e5e7eb',
+                    fontSize: '11px',
+                    color: '#6b7280'
+                  }}>
+                    {(hour + 7).toString().padStart(2, '0')}:00
+                  </div>
+                ))}
+              </div>
+
+              {/* Colonne giorni */}
+              {getWeekDays().map((date, dayIndex) => {
+                const dayEvents = getEventsForDate(date);
+                return (
+                  <div key={dayIndex} style={{
+                    borderRight: dayIndex < 6 ? '1px solid #e5e7eb' : 'none',
+                    position: 'relative'
+                  }}>
+                    {/* Griglia ore */}
+                    {Array.from({ length: 17 }, (_, hour) => (
+                      <div 
+                        key={hour + 7}
+                        style={{
+                          height: '60px',
+                          borderBottom: '1px solid #e5e7eb',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => onDayClick && onDayClick(date.toISOString().split('T')[0])}
+                        onMouseEnter={(e) => {
+                          const target = e.target as HTMLElement;
+                          target.style.backgroundColor = '#f0f9ff';
+                        }}
+                        onMouseLeave={(e) => {
+                          const target = e.target as HTMLElement;
+                          target.style.backgroundColor = 'transparent';
+                        }}
+                      />
+                    ))}
+
+
+                    {/* Eventi */}
+                    {dayEvents.map((event, eventIndex) => {
+                      // Fix per il parsing dell'orario con supporto ISO timestamps
+                      let timeStr = event.time || '09:00';
+                      
+                      // Se è un timestamp ISO (contiene T), estrai solo l'orario
+                      if (timeStr && timeStr.includes('T')) {
+                        try {
+                          const date = new Date(timeStr);
+                          const hours = date.getHours().toString().padStart(2, '0');
+                          const minutes = date.getMinutes().toString().padStart(2, '0');
+                          timeStr = `${hours}:${minutes}`;
+                        } catch (e) {
+                          timeStr = '09:00';
+                        }
+                      }
+                      
+                      // Se timeStr non è nel formato HH:MM, usa un default
+                      if (!timeStr || !timeStr.includes(':') || timeStr.length > 5) {
+                        timeStr = '09:00';
+                      }
+                      
+                      const [hourStr, minuteStr] = timeStr.split(':');
+                      let startHour = parseInt(hourStr);
+                      let startMinute = parseInt(minuteStr) || 0;
+                      
+                      // Validazione extra per ore valide
+                      if (isNaN(startHour) || startHour < 0 || startHour > 23) {
+                        startHour = 9;
+                      }
+                      if (isNaN(startMinute) || startMinute < 0 || startMinute > 59) {
+                        startMinute = 0;
+                      }
+                      
+                      // Calcola posizione solo per ore 7-23:30 (17 ore visibili)
+                      if (startHour < 7 || startHour >= 24) {
+                        return null;
+                      }
+                      
+                      const topPosition = ((startHour - 7) * 60) + startMinute;
+
+                      let backgroundColor = '#8b5cf6';
+                      if (event.type === 'availability-busy') backgroundColor = '#ef4444';
+                      if (event.type === 'availability') backgroundColor = '#22c55e';
+                      if (event.type === 'rehearsal') backgroundColor = '#3b82f6';
+
+                      return (
+                        <div
+                          key={`${event.id}-${eventIndex}`}
+                          style={{
+                            position: 'absolute',
+                            left: '4px',
+                            right: '4px',
+                            top: `${topPosition}px`,
+                            height: '50px',
+                            backgroundColor: backgroundColor,
+                            color: 'white',
+                            fontSize: '11px',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            zIndex: 10,
+                            overflow: 'hidden',
+                            cursor: 'pointer'
+                          }}
+                          title={`${event.title} - ${formatTime(event.time)}`}
+                        >
+                          <div style={{fontWeight: 'bold', lineHeight: '1.2'}}>
+                            {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
+                          </div>
+                          <div style={{fontSize: '10px', opacity: 0.9, lineHeight: '1.2'}}>
+                            {formatTime(event.time)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden h-[600px]">
-          {renderDayView()}
+        <div style={{
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          backgroundColor: 'white',
+          height: '500px'
+        }}>
+          {/* Header giorno */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '80px 1fr',
+            height: '60px',
+            borderBottom: '1px solid #e5e7eb',
+            backgroundColor: '#f8fafc'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              borderRight: '1px solid #e5e7eb'
+            }}>
+              Ora
+            </div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px'
+            }}>
+              <div style={{fontSize: '11px', color: '#6b7280', textTransform: 'uppercase'}}>
+                {weekDays[currentDate.getDay()]}
+              </div>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: currentDate.toDateString() === new Date().toDateString() ? '#ffffff' : '#374151',
+                backgroundColor: currentDate.toDateString() === new Date().toDateString() ? '#3b82f6' : 'transparent',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {currentDate.getDate()}
+              </div>
+            </div>
+          </div>
+
+          {/* Griglia calendario */}
+          <div style={{
+            height: '900px',
+            overflow: 'auto'
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '80px 1fr'
+            }}>
+              {/* Colonna ore */}
+              <div style={{borderRight: '1px solid #e5e7eb', backgroundColor: '#f8fafc'}}>
+                {Array.from({ length: 17 }, (_, hour) => (
+                  <div key={hour + 7} style={{
+                    height: '80px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-end',
+                    paddingRight: '8px',
+                    paddingTop: '4px',
+                    borderBottom: '1px solid #e5e7eb',
+                    fontSize: '12px',
+                    color: '#6b7280'
+                  }}>
+                    {(hour + 7).toString().padStart(2, '0')}:00
+                  </div>
+                ))}
+              </div>
+
+              {/* Colonna giorno */}
+              <div style={{position: 'relative'}}>
+                {/* Griglia ore */}
+                {Array.from({ length: 17 }, (_, hour) => (
+                  <div 
+                    key={hour + 7}
+                    style={{
+                      height: '80px',
+                      borderBottom: '1px solid #e5e7eb',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => onDayClick && onDayClick(currentDate.toISOString().split('T')[0])}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = '#f0f9ff';
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.backgroundColor = 'transparent';
+                    }}
+                  />
+                ))}
+
+
+                {/* Eventi */}
+                {getEventsForDate(currentDate).map((event, eventIndex) => {
+                  // Fix per il parsing dell'orario con supporto ISO timestamps
+                  let timeStr = event.time || '09:00';
+                  
+                  // Se è un timestamp ISO (contiene T), estrai solo l'orario
+                  if (timeStr && timeStr.includes('T')) {
+                    try {
+                      const date = new Date(timeStr);
+                      const hours = date.getHours().toString().padStart(2, '0');
+                      const minutes = date.getMinutes().toString().padStart(2, '0');
+                      timeStr = `${hours}:${minutes}`;
+                    } catch (e) {
+                      timeStr = '09:00';
+                    }
+                  }
+                  
+                  // Se timeStr non è nel formato HH:MM, usa un default
+                  if (!timeStr || !timeStr.includes(':') || timeStr.length > 5) {
+                    timeStr = '09:00';
+                  }
+                  
+                  const [hourStr, minuteStr] = timeStr.split(':');
+                  let startHour = parseInt(hourStr);
+                  let startMinute = parseInt(minuteStr) || 0;
+                  
+                  // Validazione extra per ore valide
+                  if (isNaN(startHour) || startHour < 0 || startHour > 23) {
+                    startHour = 9;
+                  }
+                  if (isNaN(startMinute) || startMinute < 0 || startMinute > 59) {
+                    startMinute = 0;
+                  }
+                  
+                  // Calcola posizione solo per ore 7-23:30 (17 ore visibili)
+                  if (startHour < 7 || startHour >= 24) {
+                    return null;
+                  }
+                  
+                  const topPosition = ((startHour - 7) * 80) + (startMinute * 80 / 60);
+
+                  let backgroundColor = '#8b5cf6';
+                  if (event.type === 'availability-busy') backgroundColor = '#ef4444';
+                  if (event.type === 'availability') backgroundColor = '#22c55e';
+                  if (event.type === 'rehearsal') backgroundColor = '#3b82f6';
+
+                  return (
+                    <div
+                      key={`${event.id}-${eventIndex}`}
+                      style={{
+                        position: 'absolute',
+                        left: '8px',
+                        right: '8px',
+                        top: `${topPosition}px`,
+                        height: '65px',
+                        backgroundColor: backgroundColor,
+                        color: 'white',
+                        fontSize: '14px',
+                        padding: '8px',
+                        borderRadius: '6px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        zIndex: 10,
+                        overflow: 'hidden',
+                        cursor: 'pointer'
+                      }}
+                      title={`${event.title} - ${formatTime(event.time)}`}
+                    >
+                      <div style={{fontWeight: 'bold', lineHeight: '1.3', marginBottom: '4px'}}>
+                        {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
+                      </div>
+                      <div style={{fontSize: '12px', opacity: 0.9, lineHeight: '1.3'}}>
+                        {formatTime(event.time)}
+                      </div>
+                      <div style={{fontSize: '11px', opacity: 0.8, lineHeight: '1.3'}}>
+                        {event.type === 'rehearsal' ? 'Prova' : 
+                         event.type === 'availability' ? 'Disponibile' : 'Occupato'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
