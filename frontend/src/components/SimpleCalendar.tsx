@@ -13,12 +13,13 @@ interface Event {
 interface SimpleCalendarProps {
   events?: Event[];
   onDayClick?: (date: string) => void;
+  onEventClick?: (event: Event) => void;
   userRole?: string;
 }
 
 type CalendarView = 'month' | 'week' | 'day';
 
-const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick, userRole }) => {
+const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick, onEventClick, userRole }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<CalendarView>('month');
 
@@ -96,6 +97,13 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
     if (onDayClick) {
       const clickedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       onDayClick(clickedDate);
+    }
+  };
+
+  const handleEventClick = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation(); // Previene il click sul giorno
+    if (onEventClick) {
+      onEventClick(event);
     }
   };
 
@@ -393,7 +401,7 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
             {dayEvents.slice(0, 2).map((event, index) => (
               <div
                 key={event.id}
-                className="text-xs mb-1 px-1 py-0.5 rounded"
+                className="text-xs mb-1 px-1 py-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity"
                 style={{
                   backgroundColor: event.type === 'availability-busy' ? '#fee2e2' :
                                    event.type === 'availability' ? '#dcfce7' :
@@ -402,6 +410,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
                          event.type === 'availability' ? '#166534' :
                          '#1e40af'
                 }}
+                onClick={(e) => handleEventClick(event, e)}
+                title={`Clicca per visualizzare dettagli: ${event.title}`}
               >
                 {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
               </div>
@@ -679,7 +689,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
                             overflow: 'hidden',
                             cursor: 'pointer'
                           }}
-                          title={`${event.title} - ${formatTime(event.time)}`}
+                          title={`Clicca per dettagli: ${event.title} - ${formatTime(event.time)}`}
+                          onClick={(e) => handleEventClick(event, e)}
                         >
                           <div style={{fontWeight: 'bold', lineHeight: '1.2'}}>
                             {event.type === 'availability-busy' ? 'Indisponibile' : event.title}
@@ -865,7 +876,8 @@ const SimpleCalendar: React.FC<SimpleCalendarProps> = ({ events = [], onDayClick
                         overflow: 'hidden',
                         cursor: 'pointer'
                       }}
-                      title={`${event.title} - ${formatTime(event.time)}`}
+                      title={`Clicca per dettagli: ${event.title} - ${formatTime(event.time)}`}
+                      onClick={(e) => handleEventClick(event, e)}
                     >
                       <div style={{fontWeight: 'bold', lineHeight: '1.3', marginBottom: '4px'}}>
                         {event.type === 'availability-busy' ? 'Indisponibile' : event.title}

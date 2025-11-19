@@ -6,6 +6,7 @@ import CreateUserModal from '../components/CreateUserModal';
 import GroupDetailModal from '../components/GroupDetailModal';
 import AvailabilityModal from '../components/AvailabilityModal';
 import EditEventModal from '../components/EditEventModal';
+import EventDetailsModal from '../components/EventDetailsModal';
 import Notifications from './Notifications';
 import { groupsApi, eventsApi, usersApi, availabilityApi, notificationsApi, adminApi } from '../utils/api';
 
@@ -38,6 +39,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [usersWithoutGroup, setUsersWithoutGroup] = useState<any[]>([]);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
+  const [selectedEventForDetails, setSelectedEventForDetails] = useState<any>(null);
   
   // Export functionality
   const [exportOptions, setExportOptions] = useState({
@@ -220,6 +223,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const handleDayClick = (date: string) => {
     setSelectedDate(date);
     setIsModalOpen(true);
+  };
+
+  const handleEventClick = (event: any) => {
+    setSelectedEventForDetails(event);
+    setShowEventDetailsModal(true);
   };
 
   const handleCreateEvent = async (newEvent: any) => {
@@ -819,7 +827,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Calendario */}
                         <div className="lg:col-span-2">
-                          <SimpleCalendar events={events} onDayClick={handleDayClick} userRole={user.role} />
+                          <SimpleCalendar 
+                            events={events} 
+                            onDayClick={handleDayClick} 
+                            onEventClick={handleEventClick}
+                            userRole={user.role} 
+                          />
                         </div>
 
                     {/* Sidebar con funzioni rapide */}
@@ -1894,6 +1907,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           groups={groups}
         />
       )}
+
+      {/* Modal per dettagli eventi */}
+      <EventDetailsModal
+        event={selectedEventForDetails}
+        isOpen={showEventDetailsModal}
+        onClose={() => {
+          setShowEventDetailsModal(false);
+          setSelectedEventForDetails(null);
+        }}
+      />
     </div>
   );
 };
