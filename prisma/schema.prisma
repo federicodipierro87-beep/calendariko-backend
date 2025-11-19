@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,98 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id         String @id @default(cuid())
-  email      String @unique
-  firstName  String @map("first_name")
-  lastName   String @map("last_name")
-  passwordHash String @map("password_hash")
-  role       Role   @default(ARTIST)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  groupMemberships GroupMember[]
-  availabilities   Availability[]
-
-  @@map("users")
-}
-
-model Group {
-  id          String @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  members GroupMember[]
-  events  Event[]
-
-  @@map("groups")
-}
-
-model GroupMember {
-  id      String @id @default(cuid())
-  userId  String @map("user_id")
-  groupId String @map("group_id")
-  role    MemberRole @default(MEMBER)
-
-  // Relations
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, groupId])
-  @@map("group_members")
-}
-
-model Event {
-  id          String @id @default(cuid())
-  title       String
-  description String?
-  date        DateTime
-  startTime   DateTime @map("start_time")
-  endTime     DateTime? @map("end_time")
-  location    String?
-  fee         Decimal? @db.Decimal(10, 2)
-  contactResponsible String? @map("contact_responsible")
-  eventType   String @map("event_type")
-  groupId     String @map("group_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@map("events")
-}
-
-model Availability {
-  id     String @id @default(cuid())
-  userId String @map("user_id")
-  date   DateTime
-  status AvailabilityStatus
-  notes  String?
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@map("availability")
-}
-
 enum Role {
+  USER
   ADMIN
   ARTIST
 }
 
-enum MemberRole {
-  ADMIN
-  MEMBER
-}
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-enum AvailabilityStatus {
-  AVAILABLE
-  UNAVAILABLE
-  BUSY
+  @@map("users")
 }

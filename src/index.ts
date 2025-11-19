@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -31,6 +32,7 @@ app.use(limiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Logging
 app.use(morgan('combined'));
@@ -44,10 +46,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Import routes
+import authRoutes from './routes/auth.routes';
+
 // API routes
 app.get('/api', (req, res) => {
   res.json({ message: 'Calendariko Backend API' });
 });
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
