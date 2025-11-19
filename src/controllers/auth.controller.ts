@@ -100,4 +100,25 @@ export class AuthController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  // Temporary endpoint to create first admin user for testing
+  static async createFirstAdmin(req: Request, res: Response) {
+    try {
+      const result = await AuthService.register({
+        email: 'admin@calendariko.com',
+        password: 'admin123',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'ADMIN'
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'First admin user created',
+        user: result.user
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 }
