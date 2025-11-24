@@ -7,11 +7,13 @@ const prisma = new PrismaClient();
 export class EventController {
   static async getAllEvents(req: AuthenticatedRequest, res: Response) {
     try {
-      // Recupera tutti gli eventi dell'utente autenticato
+      // Gli admin possono vedere tutti gli eventi, gli altri utenti solo i propri
+      const whereClause = req.user?.role === 'ADMIN' 
+        ? {} // Admin: nessun filtro, mostra tutti gli eventi
+        : { userId: req.user?.id }; // Altri utenti: solo i propri eventi
+      
       const events = await prisma.event.findMany({
-        where: {
-          userId: req.user?.id
-        },
+        where: whereClause,
         include: {
           user: {
             select: { firstName: true, lastName: true, email: true }
@@ -23,6 +25,7 @@ export class EventController {
         orderBy: { startTime: 'asc' }
       });
       
+      console.log(`📅 Recuperati ${events.length} eventi per utente ${req.user?.role}: ${req.user?.email}`);
       res.status(200).json(events);
     } catch (error: any) {
       console.error('Errore nel recupero degli eventi:', error);
