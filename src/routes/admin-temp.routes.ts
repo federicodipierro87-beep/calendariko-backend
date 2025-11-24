@@ -67,7 +67,7 @@ router.post('/fix-migration', async (req, res) => {
     console.log('✅ Migration fixed!');
     res.json({ success: true, message: 'Migration fixed successfully' });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error fixing migration:', error);
     res.status(500).json({ success: false, error: error.message });
   }
