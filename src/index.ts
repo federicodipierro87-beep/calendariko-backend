@@ -19,7 +19,11 @@ app.use(cors({
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'https://calendariko.easysolution-dp.com'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Rate limiting
