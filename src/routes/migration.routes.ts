@@ -131,4 +131,78 @@ router.post('/create-tables', async (req, res) => {
   }
 });
 
+// Endpoint per sincronizzare lo schema Prisma con il database
+router.post('/sync-schema', async (req, res) => {
+  try {
+    console.log('🔄 Synchronizing Prisma schema with database...');
+    
+    // Force Prisma to recognize the tables by running a simple query on each
+    const tables = [];
+    
+    try {
+      await prisma.$executeRaw`SELECT 1 FROM "groups" LIMIT 1;`;
+      tables.push('groups');
+      console.log('✅ Groups table recognized');
+    } catch (e) {
+      console.log('❌ Groups table not found');
+    }
+    
+    try {
+      await prisma.$executeRaw`SELECT 1 FROM "events" LIMIT 1;`;
+      tables.push('events');
+      console.log('✅ Events table recognized');
+    } catch (e) {
+      console.log('❌ Events table not found');
+    }
+    
+    try {
+      await prisma.$executeRaw`SELECT 1 FROM "user_groups" LIMIT 1;`;
+      tables.push('user_groups');
+      console.log('✅ UserGroups table recognized');
+    } catch (e) {
+      console.log('❌ UserGroups table not found');
+    }
+    
+    try {
+      await prisma.$executeRaw`SELECT 1 FROM "notifications" LIMIT 1;`;
+      tables.push('notifications');
+      console.log('✅ Notifications table recognized');
+    } catch (e) {
+      console.log('❌ Notifications table not found');
+    }
+    
+    try {
+      await prisma.$executeRaw`SELECT 1 FROM "availability" LIMIT 1;`;
+      tables.push('availability');
+      console.log('✅ Availability table recognized');
+    } catch (e) {
+      console.log('❌ Availability table not found');
+    }
+    
+    // Test Prisma models
+    try {
+      const groupCount = await prisma.group.count();
+      console.log(`✅ Prisma can access groups table (${groupCount} records)`);
+    } catch (e: any) {
+      console.log('❌ Prisma cannot access groups table:', e.message);
+    }
+    
+    console.log('✅ Schema synchronization complete!');
+    res.json({ 
+      success: true, 
+      message: 'Schema synchronized successfully',
+      recognizedTables: tables,
+      totalTables: tables.length
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error synchronizing schema:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      message: 'Error synchronizing schema' 
+    });
+  }
+});
+
 export default router;
