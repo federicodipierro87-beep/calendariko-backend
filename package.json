@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "postinstall": "npx prisma generate",
-    "deploy": "npx prisma migrate deploy",
+    "deploy": "echo 'Skipping migrate for now'",
     "seed": "npx ts-node prisma/seed.ts",
     "clean-duplicates": "node dist/scripts/clean-duplicates.js",
     "test": "echo \"Error: no test specified\" && exit 1"

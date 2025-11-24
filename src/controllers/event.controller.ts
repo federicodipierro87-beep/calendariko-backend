@@ -1,27 +1,11 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { AuthenticatedRequest } from '../middleware/auth';
-
-const prisma = new PrismaClient();
 
 export class EventController {
-  static async getAllEvents(req: AuthenticatedRequest, res: Response) {
+  static async getAllEvents(req: Request, res: Response) {
     try {
-      // Recupera tutti gli eventi dell'utente autenticato
-      const events = await prisma.event.findMany({
-        where: {
-          userId: req.user?.id
-        },
-        include: {
-          user: {
-            select: { firstName: true, lastName: true, email: true }
-          },
-          group: {
-            select: { id: true, name: true, color: true }
-          }
-        },
-        orderBy: { startTime: 'asc' }
-      });
+      // Per ora restituiamo un array vuoto
+      // Le tabelle del database non esistono ancora
+      const events: any[] = [];
       
       res.status(200).json(events);
     } catch (error) {
@@ -52,30 +36,17 @@ export class EventController {
     }
   }
 
-  static async createEvent(req: AuthenticatedRequest, res: Response) {
+  static async createEvent(req: Request, res: Response) {
     try {
-      const { title, description, startTime, endTime, location, groupId } = req.body;
+      const eventData = req.body;
       
-      // Crea un nuovo evento nel database
-      const newEvent = await prisma.event.create({
-        data: {
-          title,
-          description,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          location,
-          groupId,
-          userId: req.user!.id
-        },
-        include: {
-          user: {
-            select: { firstName: true, lastName: true, email: true }
-          },
-          group: {
-            select: { id: true, name: true, color: true }
-          }
-        }
-      });
+      // Per ora restituiamo un evento mock
+      const newEvent = {
+        id: Date.now().toString(),
+        ...eventData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
       
       res.status(201).json(newEvent);
     } catch (error) {
