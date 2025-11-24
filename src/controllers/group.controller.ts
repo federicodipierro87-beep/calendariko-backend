@@ -41,6 +41,15 @@ export class GroupController {
     try {
       const { id } = req.params;
       
+      // Se l'ID inizia con "mock_", è un mock group (non nel database)
+      if (id.startsWith('mock_')) {
+        console.log('⚠️ Requested mock group ID, returning not found');
+        return res.status(404).json({
+          success: false,
+          message: 'Gruppo mock non più disponibile'
+        });
+      }
+      
       // Prova a recuperare il gruppo dal database
       try {
         const group = await prisma.group.findUnique({
@@ -103,15 +112,20 @@ export class GroupController {
         
       } catch (dbError: any) {
         console.log('⚠️ Database not available, creating mock group:', dbError.message);
-        // Fallback to mock data
+        // Fallback to mock data with cuid-like ID for compatibility
         const mockGroup = {
-          id: Date.now().toString(),
+          id: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name,
           description,
           color,
           creatorId: req.user!.id,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          creator: {
+            firstName: req.user!.firstName || 'User',
+            lastName: req.user!.lastName || 'Default',
+            email: req.user!.email
+          }
         };
         res.status(201).json(mockGroup);
       }
