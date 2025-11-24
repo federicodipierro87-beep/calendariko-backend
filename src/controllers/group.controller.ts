@@ -177,4 +177,190 @@ export class GroupController {
       });
     }
   }
+
+  // Group members methods
+  static async addMember(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { groupId } = req.params;
+      const { userId, email } = req.body;
+
+      console.log(`👥 Adding member to group ${groupId}:`, { userId, email });
+
+      // Se l'ID del gruppo inizia con "mock_", è un mock group
+      if (groupId.startsWith('mock_')) {
+        return res.status(404).json({
+          success: false,
+          message: 'Gruppo mock non supporta membri'
+        });
+      }
+
+      try {
+        // Find user by email or ID
+        let targetUser;
+        if (email) {
+          targetUser = await prisma.user.findUnique({
+            where: { email }
+          });
+        } else if (userId) {
+          targetUser = await prisma.user.findUnique({
+            where: { id: userId }
+          });
+        }
+
+        if (!targetUser) {
+          return res.status(404).json({
+            success: false,
+            message: 'Utente non trovato'
+          });
+        }
+
+        // Check if group exists
+        const group = await prisma.group.findUnique({
+          where: { id: groupId }
+        });
+
+        if (!group) {
+          return res.status(404).json({
+            success: false,
+            message: 'Gruppo non trovato'
+          });
+        }
+
+        // Check if user is already a member
+        const existingMembership = await prisma.userGroup.findUnique({
+          where: {
+            userId_groupId: {
+              userId: targetUser.id,
+              groupId: groupId
+            }
+          }
+        });
+
+        if (existingMembership) {
+          return res.status(400).json({
+            success: false,
+            message: 'Utente già membro del gruppo'
+          });
+        }
+
+        // Add user to group
+        const membership = await prisma.userGroup.create({
+          data: {
+            userId: targetUser.id,
+            groupId: groupId
+          },
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true }
+            }
+          }
+        });
+
+        console.log(`✅ Added user ${targetUser.email} to group ${groupId}`);
+        res.status(201).json({
+          success: true,
+          member: membership.user
+        });
+
+      } catch (dbError: any) {
+        console.log('⚠️ Database error adding member:', dbError.message);
+        res.status(500).json({
+          success: false,
+          message: 'Errore nel database'
+        });
+      }
+
+    } catch (error) {
+      console.error('Errore nell\'aggiunta del membro:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
+
+  static async removeMember(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { groupId, userId } = req.params;
+
+      try {
+        const membership = await prisma.userGroup.findUnique({
+          where: {
+            userId_groupId: {
+              userId: userId,
+              groupId: groupId
+            }
+          }
+        });
+
+        if (!membership) {
+          return res.status(404).json({
+            success: false,
+            message: 'Utente non è membro del gruppo'
+          });
+        }
+
+        await prisma.userGroup.delete({
+          where: {
+            userId_groupId: {
+              userId: userId,
+              groupId: groupId
+            }
+          }
+        });
+
+        console.log(`✅ Removed user ${userId} from group ${groupId}`);
+        res.json({
+          success: true,
+          message: 'Utente rimosso dal gruppo'
+        });
+
+      } catch (dbError: any) {
+        console.log('⚠️ Database error removing member:', dbError.message);
+        res.status(500).json({
+          success: false,
+          message: 'Errore nel database'
+        });
+      }
+
+    } catch (error) {
+      console.error('Errore nella rimozione del membro:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
+
+  static async getGroupMembers(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { groupId } = req.params;
+
+      try {
+        const members = await prisma.userGroup.findMany({
+          where: { groupId },
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true, role: true }
+            }
+          }
+        });
+
+        const membersList = members.map(m => m.user);
+        console.log(`✅ Retrieved ${membersList.length} members for group ${groupId}`);
+        res.json(membersList);
+
+      } catch (dbError: any) {
+        console.log('⚠️ Database error getting members:', dbError.message);
+        res.json([]);
+      }
+
+    } catch (error) {
+      console.error('Errore nel recupero dei membri:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
 }
