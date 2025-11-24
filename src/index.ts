@@ -54,36 +54,19 @@ import groupRoutes from './routes/group.routes';
 import userRoutes from './routes/user.routes';
 import availabilityRoutes from './routes/availability.routes';
 import notificationRoutes from './routes/notification.routes';
-import migrationRoutes from './routes/migration.routes';
 
 // API routes
 app.get('/api', (req, res) => {
   res.json({ message: 'Calendariko Backend API' });
 });
 
-// Test endpoint for schema sync (no auth required)
-app.get('/api/test-schema', async (req, res) => {
-  try {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    const groupCount = await prisma.group.count();
-    const eventCount = await prisma.event.count();
-    
-    await prisma.$disconnect();
-    
-    res.json({
-      success: true,
-      message: 'Schema is working',
-      counts: { groups: groupCount, events: eventCount }
-    });
-  } catch (error: any) {
-    res.json({
-      success: false,
-      message: 'Schema not synced',
-      error: error.message
-    });
-  }
+// Simple test endpoint (no database access)
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is working',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Auth routes
@@ -104,9 +87,6 @@ app.use('/api/availability', availabilityRoutes);
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
 
-// Migration routes (TEMPORARY)
-app.use('/api/migration', migrationRoutes);
-
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
@@ -119,22 +99,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // 404 handler - handled by default Express behavior
 
 // Start server
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  
-  // Auto-sync Prisma schema on startup
-  try {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    console.log('🔄 Auto-syncing Prisma schema...');
-    const groupCount = await prisma.group.count();
-    console.log(`✅ Prisma schema sync successful - Groups: ${groupCount}`);
-    
-    await prisma.$disconnect();
-  } catch (error: any) {
-    console.log('⚠️ Prisma schema not yet synced:', error.message);
-    console.log('📝 Tables may need to be created first');
-  }
 });
