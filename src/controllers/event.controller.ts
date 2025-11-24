@@ -7,11 +7,8 @@ export class EventController {
       // In futuro qui implementeremo la logica per recuperare gli eventi dal database
       const events: any[] = [];
       
-      res.status(200).json({
-        success: true,
-        data: events,
-        message: 'Eventi recuperati con successo'
-      });
+      // Il frontend si aspetta direttamente un array
+      res.status(200).json(events);
     } catch (error) {
       console.error('Errore nel recupero degli eventi:', error);
       res.status(500).json({
