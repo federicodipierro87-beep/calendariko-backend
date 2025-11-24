@@ -50,7 +50,6 @@ app.get('/health', (req, res) => {
 import authRoutes from './routes/auth.routes';
 import eventRoutes from './routes/event.routes';
 import groupRoutes from './routes/group.routes';
-import adminRoutes from './routes/admin.routes';
 import userRoutes from './routes/user.routes';
 import availabilityRoutes from './routes/availability.routes';
 import notificationRoutes from './routes/notification.routes';
@@ -77,9 +76,6 @@ app.use('/api/availability', availabilityRoutes);
 
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
-
-// Admin routes (TEMPORARY)
-app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
