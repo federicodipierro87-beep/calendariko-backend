@@ -51,6 +51,7 @@ import authRoutes from './routes/auth.routes';
 import eventRoutes from './routes/event.routes';
 import groupRoutes from './routes/group.routes';
 import adminRoutes from './routes/admin.routes';
+import userRoutes from './routes/user.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -65,6 +66,9 @@ app.use('/api/events', eventRoutes);
 
 // Group routes
 app.use('/api/groups', groupRoutes);
+
+// User routes
+app.use('/api/users', userRoutes);
 
 // Admin routes (TEMPORARY)
 app.use('/api/admin', adminRoutes);
