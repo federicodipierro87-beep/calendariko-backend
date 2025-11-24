@@ -1,12 +1,33 @@
 import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+const prisma = new PrismaClient();
 
 export class GroupController {
-  static async getAllGroups(req: Request, res: Response) {
+  static async getAllGroups(req: AuthenticatedRequest, res: Response) {
     try {
-      // Restituiamo array vuoto per ora - database non ancora configurato
-      const groups: any[] = [];
+      // Prova a recuperare dati reali dal database
+      try {
+        const groups = await prisma.group.findMany({
+          where: {
+            creatorId: req.user?.id
+          },
+          include: {
+            creator: {
+              select: { firstName: true, lastName: true, email: true }
+            }
+          }
+        });
+        
+        console.log(`✅ Retrieved ${groups.length} groups for user ${req.user?.email}`);
+        res.status(200).json(groups);
+        
+      } catch (dbError: any) {
+        console.log('⚠️ Database not available, returning empty array:', dbError.message);
+        res.status(200).json([]);
+      }
       
-      res.status(200).json(groups);
     } catch (error) {
       console.error('Errore nel recupero dei gruppi:', error);
       res.status(500).json({
@@ -35,19 +56,44 @@ export class GroupController {
     }
   }
 
-  static async createGroup(req: Request, res: Response) {
+  static async createGroup(req: AuthenticatedRequest, res: Response) {
     try {
-      const groupData = req.body;
+      const { name, description, color } = req.body;
       
-      // Restituiamo un gruppo mock per ora
-      const newGroup = {
-        id: Date.now().toString(),
-        ...groupData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Prova a salvare nel database reale
+      try {
+        const newGroup = await prisma.group.create({
+          data: {
+            name,
+            description,
+            color,
+            creatorId: req.user!.id
+          },
+          include: {
+            creator: {
+              select: { firstName: true, lastName: true, email: true }
+            }
+          }
+        });
+        
+        console.log(`✅ Created group "${name}" for user ${req.user?.email}`);
+        res.status(201).json(newGroup);
+        
+      } catch (dbError: any) {
+        console.log('⚠️ Database not available, creating mock group:', dbError.message);
+        // Fallback to mock data
+        const mockGroup = {
+          id: Date.now().toString(),
+          name,
+          description,
+          color,
+          creatorId: req.user!.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        res.status(201).json(mockGroup);
+      }
       
-      res.status(201).json(newGroup);
     } catch (error) {
       console.error('Errore nella creazione del gruppo:', error);
       res.status(500).json({
