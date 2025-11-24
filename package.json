@@ -1,36 +1,51 @@
 {
-  "name": "calendariko",
+  "name": "backend",
   "version": "1.0.0",
-  "description": "Event Management Portal for Bands & DJs",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "install:backend": "cd backend && npm install",
-    "install:frontend": "cd frontend && npm install", 
-    "install:all": "npm run install:backend && npm run install:frontend",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build:backend": "cd backend && npm run build",
-    "build:frontend": "cd frontend && npm run build",
-    "build": "npm run build:backend && npm run build:frontend",
-    "start:backend": "cd backend && npm start",
-    "start:frontend": "cd frontend && npm run preview",
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
-    "db:generate": "cd backend && npx prisma generate",
-    "db:push": "cd backend && npx prisma db push",
-    "db:migrate": "cd backend && npx prisma migrate deploy",
-    "db:studio": "cd backend && npx prisma studio"
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "postinstall": "npx prisma generate",
+    "deploy": "npx prisma db push --accept-data-loss",
+    "seed": "npx ts-node prisma/seed.ts",
+    "clean-duplicates": "node dist/scripts/clean-duplicates.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "event-management",
-    "calendar",
-    "band",
-    "dj",
-    "music",
-    "booking"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
+  "prisma": {
+    "seed": "npx ts-node prisma/seed.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "@types/cookie-parser": "^1.4.10",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "nodemailer": "^7.0.10",
+    "prisma": "^6.18.0",
+    "resend": "^6.4.2"
+  },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.10.0",
+    "@types/nodemailer": "^7.0.3",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
