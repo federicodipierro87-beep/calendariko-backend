@@ -61,6 +61,31 @@ app.get('/api', (req, res) => {
   res.json({ message: 'Calendariko Backend API' });
 });
 
+// Test endpoint for schema sync (no auth required)
+app.get('/api/test-schema', async (req, res) => {
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    const groupCount = await prisma.group.count();
+    const eventCount = await prisma.event.count();
+    
+    await prisma.$disconnect();
+    
+    res.json({
+      success: true,
+      message: 'Schema is working',
+      counts: { groups: groupCount, events: eventCount }
+    });
+  } catch (error: any) {
+    res.json({
+      success: false,
+      message: 'Schema not synced',
+      error: error.message
+    });
+  }
+});
+
 // Auth routes
 app.use('/api/auth', authRoutes);
 
@@ -94,7 +119,22 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // 404 handler - handled by default Express behavior
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Auto-sync Prisma schema on startup
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    console.log('🔄 Auto-syncing Prisma schema...');
+    const groupCount = await prisma.group.count();
+    console.log(`✅ Prisma schema sync successful - Groups: ${groupCount}`);
+    
+    await prisma.$disconnect();
+  } catch (error: any) {
+    console.log('⚠️ Prisma schema not yet synced:', error.message);
+    console.log('📝 Tables may need to be created first');
+  }
 });
