@@ -1,11 +1,19 @@
 import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+const prisma = new PrismaClient();
 
 export class NotificationController {
-  static async getUnreadCount(req: Request, res: Response) {
+  static async getUnreadCount(req: AuthenticatedRequest, res: Response) {
     try {
-      // Per ora restituiamo 0 notifiche non lette
-      // In futuro qui implementeremo la logica per contare le notifiche non lette dal database
-      const unreadCount = 0;
+      // Conta le notifiche non lette dell'utente autenticato
+      const unreadCount = await prisma.notification.count({
+        where: {
+          userId: req.user?.id,
+          isRead: false
+        }
+      });
       
       res.status(200).json({ count: unreadCount });
     } catch (error) {

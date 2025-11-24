@@ -1,13 +1,28 @@
 import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+const prisma = new PrismaClient();
 
 export class EventController {
-  static async getAllEvents(req: Request, res: Response) {
+  static async getAllEvents(req: AuthenticatedRequest, res: Response) {
     try {
-      // Per ora restituiamo un array vuoto
-      // In futuro qui implementeremo la logica per recuperare gli eventi dal database
-      const events: any[] = [];
+      // Recupera tutti gli eventi dell'utente autenticato
+      const events = await prisma.event.findMany({
+        where: {
+          userId: req.user?.id
+        },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          group: {
+            select: { id: true, name: true, color: true }
+          }
+        },
+        orderBy: { startTime: 'asc' }
+      });
       
-      // Il frontend si aspetta direttamente un array
       res.status(200).json(events);
     } catch (error) {
       console.error('Errore nel recupero degli eventi:', error);
@@ -37,24 +52,32 @@ export class EventController {
     }
   }
 
-  static async createEvent(req: Request, res: Response) {
+  static async createEvent(req: AuthenticatedRequest, res: Response) {
     try {
-      const eventData = req.body;
+      const { title, description, startTime, endTime, location, groupId } = req.body;
       
-      // Per ora restituiamo un evento mock
-      // In futuro qui implementeremo la logica per creare l'evento nel database
-      const newEvent = {
-        id: Date.now().toString(),
-        ...eventData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      res.status(201).json({
-        success: true,
-        data: newEvent,
-        message: 'Evento creato con successo'
+      // Crea un nuovo evento nel database
+      const newEvent = await prisma.event.create({
+        data: {
+          title,
+          description,
+          startTime: new Date(startTime),
+          endTime: new Date(endTime),
+          location,
+          groupId,
+          userId: req.user!.id
+        },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          group: {
+            select: { id: true, name: true, color: true }
+          }
+        }
       });
+      
+      res.status(201).json(newEvent);
     } catch (error) {
       console.error('Errore nella creazione dell\'evento:', error);
       res.status(500).json({

@@ -30,6 +30,7 @@ export class AuthService {
       }
 
       const tokens = generateTokens({
+        id: user.id,
         userId: user.id,
         email: user.email,
         role: user.role
@@ -87,6 +88,7 @@ export class AuthService {
       console.log('✅ User created successfully:', user.email, 'with role:', user.role);
 
       const tokens = generateTokens({
+        id: user.id,
         userId: user.id,
         email: user.email,
         role: user.role
@@ -124,6 +126,7 @@ export class AuthService {
       }
 
       const tokens = generateTokens({
+        id: user.id,
         userId: user.id,
         email: user.email,
         role: user.role

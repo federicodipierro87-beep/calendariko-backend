@@ -13,6 +13,19 @@ enum Role {
   ARTIST
 }
 
+enum EventStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -23,5 +36,94 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Relazioni
+  events              Event[]
+  groupMemberships    UserGroup[]
+  availabilities      Availability[]
+  notifications       Notification[]
+  createdGroups       Group[]         @relation("GroupCreator")
+
   @@map("users")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relazioni
+  creator     User        @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members     UserGroup[]
+  events      Event[]
+
+  @@map("groups")
+}
+
+model UserGroup {
+  id      String @id @default(cuid())
+  userId  String
+  groupId String
+
+  // Relazioni
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("user_groups")
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  location    String?
+  status      EventStatus @default(PENDING)
+  userId      String
+  groupId     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relazioni
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group       Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@map("events")
+}
+
+model Availability {
+  id        String   @id @default(cuid())
+  userId    String
+  dayOfWeek Int      // 0 = Domenica, 1 = Lunedì, etc.
+  startTime String   // Format: "HH:mm"
+  endTime   String   // Format: "HH:mm"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relazioni
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("availability")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relazioni
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

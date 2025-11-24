@@ -1,13 +1,41 @@
 import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+const prisma = new PrismaClient();
 
 export class GroupController {
-  static async getAllGroups(req: Request, res: Response) {
+  static async getAllGroups(req: AuthenticatedRequest, res: Response) {
     try {
-      // Per ora restituiamo un array vuoto
-      // In futuro qui implementeremo la logica per recuperare i gruppi dal database
-      const groups: any[] = [];
+      // Recupera tutti i gruppi dove l'utente è membro o creatore
+      const groups = await prisma.group.findMany({
+        where: {
+          OR: [
+            { creatorId: req.user?.id },
+            { 
+              members: {
+                some: { userId: req.user?.id }
+              }
+            }
+          ]
+        },
+        include: {
+          creator: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          members: {
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, email: true }
+              }
+            }
+          },
+          _count: {
+            select: { events: true, members: true }
+          }
+        }
+      });
       
-      // Il frontend si aspetta direttamente un array
       res.status(200).json(groups);
     } catch (error) {
       console.error('Errore nel recupero dei gruppi:', error);
@@ -37,18 +65,31 @@ export class GroupController {
     }
   }
 
-  static async createGroup(req: Request, res: Response) {
+  static async createGroup(req: AuthenticatedRequest, res: Response) {
     try {
-      const groupData = req.body;
+      const { name, description, color } = req.body;
       
-      // Per ora restituiamo un gruppo mock
-      // In futuro qui implementeremo la logica per creare il gruppo nel database
-      const newGroup = {
-        id: Date.now().toString(),
-        ...groupData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Crea un nuovo gruppo nel database
+      const newGroup = await prisma.group.create({
+        data: {
+          name,
+          description,
+          color,
+          creatorId: req.user!.id
+        },
+        include: {
+          creator: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          members: {
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, email: true }
+              }
+            }
+          }
+        }
+      });
       
       res.status(201).json(newGroup);
     } catch (error) {
