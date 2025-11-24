@@ -12,8 +12,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet());
+// CORS deve essere PRIMA di helmet per funzionare correttamente
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -24,6 +23,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
   preflightContinue: false,
   optionsSuccessStatus: 204
+}));
+
+// Security middleware (dopo CORS)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Rate limiting
@@ -57,6 +61,7 @@ import groupRoutes from './routes/group.routes';
 import userRoutes from './routes/user.routes';
 import availabilityRoutes from './routes/availability.routes';
 import notificationRoutes from './routes/notification.routes';
+import adminTempRoutes from './routes/admin-temp.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -80,6 +85,9 @@ app.use('/api/availability', availabilityRoutes);
 
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
+
+// Admin temp routes (TEMPORARY)
+app.use('/api/admin-temp', adminTempRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
