@@ -72,14 +72,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         const transformedEvents = eventsData.map((event: any) => ({
           id: event.id,
           title: event.title,
-          date: event.date ? event.date.split('T')[0] : '', // Estrae solo la data con controllo
-          time: event.start_time || '',
-          endTime: event.end_time || '',               // AGGIUNTO: mappa end_time a endTime
-          type: event.event_type || 'event',
-          venue: event.venue_name || '',
-          notes: event.notes || '',
-          contact_responsible: event.contact_responsible || '',  // AGGIUNTO: mappa contact_responsible
-          group_id: event.group_id,
+          // Nuovo formato Prisma
+          date: event.startTime ? event.startTime.split('T')[0] : (event.date ? event.date.split('T')[0] : ''),
+          time: event.startTime ? event.startTime.split('T')[1]?.substring(0, 5) : event.start_time || '',
+          endTime: event.endTime ? event.endTime.split('T')[1]?.substring(0, 5) : event.end_time || '',
+          // Descrizione dal nuovo campo
+          type: event.description || event.event_type || 'event',
+          venue: event.location || event.venue_name || '',
+          notes: event.description || event.notes || '',
+          contact_responsible: event.contact_responsible || '',
+          // Group ID dal nuovo formato
+          group_id: event.groupId || event.group_id,
           group: event.group,
           fee: event.fee || 0
         }));
@@ -165,14 +168,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       const transformedEvents = eventsData.map((event: any) => ({
         id: event.id,
         title: event.title,
-        date: event.date ? event.date.split('T')[0] : '',
-        time: event.start_time || '',
-        endTime: event.end_time || '',               // AGGIUNTO: mappa end_time a endTime
-        type: event.event_type || 'event',
-        venue: event.venue_name || '',
-        notes: event.notes || '',
-        contact_responsible: event.contact_responsible || '',  // AGGIUNTO: mappa contact_responsible
-        group_id: event.group_id,
+        // Nuovo formato Prisma
+        date: event.startTime ? event.startTime.split('T')[0] : (event.date ? event.date.split('T')[0] : ''),
+        time: event.startTime ? event.startTime.split('T')[1]?.substring(0, 5) : event.start_time || '',
+        endTime: event.endTime ? event.endTime.split('T')[1]?.substring(0, 5) : event.end_time || '',
+        // Descrizione dal nuovo campo
+        type: event.description || event.event_type || 'event',
+        venue: event.location || event.venue_name || '',
+        notes: event.description || event.notes || '',
+        contact_responsible: event.contact_responsible || '',
+        // Group ID dal nuovo formato
+        group_id: event.groupId || event.group_id,
         group: event.group,
         fee: event.fee || 0
       }));
@@ -250,18 +256,21 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       const createdEvent = await eventsApi.create(eventData);
       console.log('📥 Evento ricevuto dal backend:', createdEvent);
       
-      // Trasforma l'evento per il calendario con controlli null
+      // Trasforma l'evento per il calendario dal formato Prisma
       const transformedEvent = {
         id: createdEvent.id,
         title: createdEvent.title || newEvent.title,
-        date: createdEvent.date ? createdEvent.date.split('T')[0] : newEvent.date,
-        time: createdEvent.start_time || newEvent.time,
-        endTime: createdEvent.end_time || newEvent.endTime,    // AGGIUNTO: mappa end_time a endTime
-        type: createdEvent.event_type || newEvent.type || 'event',
-        venue: createdEvent.venue_name || newEvent.venue || '',
-        notes: createdEvent.notes || newEvent.notes || '',
-        contact_responsible: createdEvent.contact_responsible || newEvent.contact_responsible || '',  // AGGIUNTO: mappa contact_responsible
-        group_id: createdEvent.group_id || newEvent.group_id,
+        // Nuovo formato Prisma
+        date: createdEvent.startTime ? createdEvent.startTime.split('T')[0] : newEvent.date,
+        time: createdEvent.startTime ? createdEvent.startTime.split('T')[1]?.substring(0, 5) : newEvent.time,
+        endTime: createdEvent.endTime ? createdEvent.endTime.split('T')[1]?.substring(0, 5) : newEvent.endTime,
+        // Descrizione dal nuovo campo
+        type: createdEvent.description || newEvent.type || 'event',
+        venue: createdEvent.location || newEvent.venue || '',
+        notes: createdEvent.description || newEvent.notes || '',
+        contact_responsible: newEvent.contact_responsible || '',
+        // Group ID dal nuovo formato
+        group_id: createdEvent.groupId || newEvent.group_id,
         group: createdEvent.group,
         fee: createdEvent.fee || (newEvent.fee ? parseFloat(newEvent.fee) : 0)
       };

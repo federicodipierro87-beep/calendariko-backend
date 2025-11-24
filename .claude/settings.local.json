@@ -38,7 +38,13 @@
       "Bash(npm start)",
       "Bash(railway deploy:*)",
       "Bash(npx netlify deploy:*)",
-      "Bash(railway logs:*)"
+      "Bash(railway logs:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(railway variables:*)",
+      "Bash(git ls-tree:*)"
     ],
     "deny": [],
     "ask": [],
