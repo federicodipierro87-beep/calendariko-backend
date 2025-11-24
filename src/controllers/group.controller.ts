@@ -41,12 +41,34 @@ export class GroupController {
     try {
       const { id } = req.params;
       
-      // Per ora restituiamo null (gruppo non trovato)
-      // In futuro qui implementeremo la logica per recuperare il gruppo specifico
-      res.status(404).json({
-        success: false,
-        message: 'Gruppo non trovato'
-      });
+      // Prova a recuperare il gruppo dal database
+      try {
+        const group = await prisma.group.findUnique({
+          where: { id: id },
+          include: {
+            creator: {
+              select: { firstName: true, lastName: true, email: true }
+            }
+          }
+        });
+
+        if (!group) {
+          return res.status(404).json({
+            success: false,
+            message: 'Gruppo non trovato'
+          });
+        }
+
+        console.log(`✅ Retrieved group "${group.name}" with ID ${id}`);
+        res.status(200).json(group);
+
+      } catch (dbError: any) {
+        console.log('⚠️ Database not available for getGroupById:', dbError.message);
+        res.status(404).json({
+          success: false,
+          message: 'Gruppo non trovato'
+        });
+      }
     } catch (error) {
       console.error('Errore nel recupero del gruppo:', error);
       res.status(500).json({
