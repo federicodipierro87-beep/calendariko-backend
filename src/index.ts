@@ -52,6 +52,7 @@ import eventRoutes from './routes/event.routes';
 import groupRoutes from './routes/group.routes';
 import adminRoutes from './routes/admin.routes';
 import userRoutes from './routes/user.routes';
+import availabilityRoutes from './routes/availability.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -69,6 +70,9 @@ app.use('/api/groups', groupRoutes);
 
 // User routes
 app.use('/api/users', userRoutes);
+
+// Availability routes
+app.use('/api/availability', availabilityRoutes);
 
 // Admin routes (TEMPORARY)
 app.use('/api/admin', adminRoutes);
