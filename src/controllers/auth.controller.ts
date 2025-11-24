@@ -34,15 +34,15 @@ export class AuthController {
     try {
       const { email, password, firstName, lastName, role } = req.body;
 
-      if (!email || !password || !firstName || !lastName) {
-        return res.status(400).json({ error: 'All fields are required' });
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
       }
 
       const result = await AuthService.register({
         email,
         password,
-        firstName,
-        lastName,
+        firstName: firstName || 'User',
+        lastName: lastName || 'Default',
         role
       });
 
