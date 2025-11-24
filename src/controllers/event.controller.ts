@@ -58,17 +58,69 @@ export class EventController {
 
   static async createEvent(req: AuthenticatedRequest, res: Response) {
     try {
-      const { title, description, startTime, endTime, location, groupId } = req.body;
+      // Gestisce sia il formato nuovo (Prisma) che quello vecchio (frontend esistente)
+      const {
+        title,
+        description,
+        startTime,
+        endTime,
+        location,
+        groupId,
+        // Formato vecchio dal frontend
+        event_type,
+        date,
+        start_time,
+        end_time,
+        venue_name,
+        group_id,
+        notes
+      } = req.body;
+      
+      // Normalizza i dati per il database Prisma
+      const eventTitle = title || req.body.title;
+      const eventDescription = description || event_type || notes || '';
+      const eventLocation = location || venue_name || '';
+      const eventGroupId = groupId || group_id;
+      
+      // Gestisce le date - se arrivano separate le combina
+      let eventStartTime: Date;
+      let eventEndTime: Date;
+      
+      if (startTime) {
+        eventStartTime = new Date(startTime);
+      } else if (date && start_time) {
+        eventStartTime = new Date(`${date}T${start_time}`);
+      } else {
+        throw new Error('startTime or date+start_time required');
+      }
+      
+      if (endTime) {
+        eventEndTime = new Date(endTime);
+      } else if (date && end_time) {
+        eventEndTime = new Date(`${date}T${end_time}`);
+      } else {
+        throw new Error('endTime or date+end_time required');
+      }
+      
+      console.log('📝 Dati evento normalizzati:', {
+        title: eventTitle,
+        description: eventDescription,
+        startTime: eventStartTime,
+        endTime: eventEndTime,
+        location: eventLocation,
+        groupId: eventGroupId,
+        userId: req.user!.id
+      });
       
       // Crea un nuovo evento nel database
       const newEvent = await prisma.event.create({
         data: {
-          title,
-          description,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          location,
-          groupId,
+          title: eventTitle,
+          description: eventDescription,
+          startTime: eventStartTime,
+          endTime: eventEndTime,
+          location: eventLocation,
+          groupId: eventGroupId,
           userId: req.user!.id
         },
         include: {
@@ -81,9 +133,10 @@ export class EventController {
         }
       });
       
+      console.log('✅ Evento creato:', newEvent);
       res.status(201).json(newEvent);
     } catch (error: any) {
-      console.error('Errore nella creazione dell\'evento:', error);
+      console.error('❌ Errore nella creazione dell\'evento:', error);
       // Se la tabella non esiste ancora, restituisci errore specifico
       if (error.code === 'P2021' || error.message?.includes('does not exist')) {
         return res.status(400).json({
@@ -93,7 +146,7 @@ export class EventController {
       }
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }
