@@ -49,6 +49,7 @@ app.get('/health', (req, res) => {
 // Import routes
 import authRoutes from './routes/auth.routes';
 import eventRoutes from './routes/event.routes';
+import groupRoutes from './routes/group.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -60,6 +61,9 @@ app.use('/api/auth', authRoutes);
 
 // Event routes
 app.use('/api/events', eventRoutes);
+
+// Group routes
+app.use('/api/groups', groupRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
