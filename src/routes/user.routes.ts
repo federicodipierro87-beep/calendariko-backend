@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticateToken);
 
 // Rotte per gli utenti
+router.get('/without-group', UserController.getUsersWithoutGroup); // Deve essere prima di /:id
 router.get('/', UserController.getAllUsers);
 router.get('/:id', UserController.getUserById);
 router.put('/:id', UserController.updateUser);

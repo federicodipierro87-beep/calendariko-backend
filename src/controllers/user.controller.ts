@@ -4,6 +4,32 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export class UserController {
+  static async getUsersWithoutGroup(req: Request, res: Response) {
+    try {
+      // Per ora restituiamo tutti gli utenti dato che non abbiamo ancora implementato i gruppi
+      // In futuro qui implementeremo la logica per trovare utenti senza gruppi
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+      
+      res.status(200).json(users);
+    } catch (error) {
+      console.error('Errore nel recupero degli utenti senza gruppo:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response) {
     try {
       // Recupera tutti gli utenti dal database
