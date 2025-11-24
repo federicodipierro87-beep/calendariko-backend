@@ -1,15 +1,35 @@
 import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+const prisma = new PrismaClient();
 
 export class EventController {
-  static async getAllEvents(req: Request, res: Response) {
+  static async getAllEvents(req: AuthenticatedRequest, res: Response) {
     try {
-      // Per ora restituiamo un array vuoto
-      // Le tabelle del database non esistono ancora
-      const events: any[] = [];
+      // Recupera tutti gli eventi dell'utente autenticato
+      const events = await prisma.event.findMany({
+        where: {
+          userId: req.user?.id
+        },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          group: {
+            select: { id: true, name: true, color: true }
+          }
+        },
+        orderBy: { startTime: 'asc' }
+      });
       
       res.status(200).json(events);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore nel recupero degli eventi:', error);
+      // Se la tabella non esiste ancora, restituisci array vuoto
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        return res.status(200).json([]);
+      }
       res.status(500).json({
         success: false,
         message: 'Errore interno del server'
@@ -36,21 +56,41 @@ export class EventController {
     }
   }
 
-  static async createEvent(req: Request, res: Response) {
+  static async createEvent(req: AuthenticatedRequest, res: Response) {
     try {
-      const eventData = req.body;
+      const { title, description, startTime, endTime, location, groupId } = req.body;
       
-      // Per ora restituiamo un evento mock
-      const newEvent = {
-        id: Date.now().toString(),
-        ...eventData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Crea un nuovo evento nel database
+      const newEvent = await prisma.event.create({
+        data: {
+          title,
+          description,
+          startTime: new Date(startTime),
+          endTime: new Date(endTime),
+          location,
+          groupId,
+          userId: req.user!.id
+        },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          group: {
+            select: { id: true, name: true, color: true }
+          }
+        }
+      });
       
       res.status(201).json(newEvent);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore nella creazione dell\'evento:', error);
+      // Se la tabella non esiste ancora, restituisci errore specifico
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Database tables not yet created. Please run migration first.'
+        });
+      }
       res.status(500).json({
         success: false,
         message: 'Errore interno del server'

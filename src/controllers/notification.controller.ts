@@ -1,14 +1,27 @@
 import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { AuthenticatedRequest } from '../middleware/auth';
+
+const prisma = new PrismaClient();
 
 export class NotificationController {
-  static async getUnreadCount(req: Request, res: Response) {
+  static async getUnreadCount(req: AuthenticatedRequest, res: Response) {
     try {
-      // Per ora restituiamo 0 notifiche non lette
-      const unreadCount = 0;
+      // Conta le notifiche non lette dell'utente autenticato
+      const unreadCount = await prisma.notification.count({
+        where: {
+          userId: req.user?.id,
+          isRead: false
+        }
+      });
       
       res.status(200).json({ count: unreadCount });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore nel conteggio delle notifiche non lette:', error);
+      // Se la tabella non esiste ancora, restituisci 0
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        return res.status(200).json({ count: 0 });
+      }
       res.status(500).json({
         success: false,
         message: 'Errore interno del server'

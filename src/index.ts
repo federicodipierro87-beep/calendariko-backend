@@ -54,6 +54,7 @@ import groupRoutes from './routes/group.routes';
 import userRoutes from './routes/user.routes';
 import availabilityRoutes from './routes/availability.routes';
 import notificationRoutes from './routes/notification.routes';
+import migrationRoutes from './routes/migration.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -77,6 +78,9 @@ app.use('/api/availability', availabilityRoutes);
 
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
+
+// Migration routes (TEMPORARY)
+app.use('/api/migration', migrationRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
