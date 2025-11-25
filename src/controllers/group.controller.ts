@@ -57,6 +57,13 @@ export class GroupController {
           include: {
             creator: {
               select: { firstName: true, lastName: true, email: true }
+            },
+            members: {
+              include: {
+                user: {
+                  select: { id: true, firstName: true, lastName: true, email: true, role: true }
+                }
+              }
             }
           }
         });
@@ -68,8 +75,24 @@ export class GroupController {
           });
         }
 
-        console.log(`✅ Retrieved group "${group.name}" with ID ${id}`);
-        res.status(200).json(group);
+        // Trasforma i dati per compatibilità frontend
+        const groupWithUserGroups = {
+          ...group,
+          user_groups: group.members.map(member => ({
+            user_id: member.user.id,
+            group_id: group.id,
+            user: {
+              id: member.user.id,
+              first_name: member.user.firstName,
+              last_name: member.user.lastName,
+              email: member.user.email,
+              role: member.user.role
+            }
+          }))
+        };
+
+        console.log(`✅ Retrieved group "${group.name}" with ${group.members.length} members`);
+        res.status(200).json(groupWithUserGroups);
 
       } catch (dbError: any) {
         console.log('⚠️ Database not available for getGroupById:', dbError.message);
