@@ -44,7 +44,17 @@
       "Bash(git rev-parse:*)",
       "Bash(npm cache clean:*)",
       "Bash(railway variables:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(railway status:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:rBjGTePGkglclWzlZwoPWcCYYfAzCebI@tramway.proxy.rlwy.net:28526/railway\" npx prisma migrate deploy)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:rBjGTePGkglclWzlZwoPWcCYYfAzCebI@tramway.proxy.rlwy.net:28526/railway\" npx prisma migrate resolve --applied 20241124_add_all_tables)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:rBjGTePGkglclWzlZwoPWcCYYfAzCebI@tramway.proxy.rlwy.net:28526/railway\" npx prisma migrate resolve --applied 20251119000001_simplify_user_schema)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:rBjGTePGkglclWzlZwoPWcCYYfAzCebI@tramway.proxy.rlwy.net:28526/railway\" npx prisma db push)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:rBjGTePGkglclWzlZwoPWcCYYfAzCebI@tramway.proxy.rlwy.net:28526/railway\" npx prisma db seed)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:rBjGTePGkglclWzlZwoPWcCYYfAzCebI@tramway.proxy.rlwy.net:28526/railway\" npx prisma generate)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git clone:*)"
     ],
     "deny": [],
     "ask": [],
