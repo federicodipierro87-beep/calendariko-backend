@@ -25,7 +25,7 @@ export class EventController {
         orderBy: { startTime: 'asc' }
       });
       
-      console.log(`📅 Recuperati ${events.length} eventi per utente ${req.user?.role}: ${req.user?.email}`);
+      console.log(`📅 [Railway DB] Recuperati ${events.length} eventi per utente ${req.user?.role}: ${req.user?.email}`);
       res.status(200).json(events);
     } catch (error: any) {
       console.error('Errore nel recupero degli eventi:', error);
@@ -136,7 +136,7 @@ export class EventController {
         }
       });
       
-      console.log('✅ Evento creato:', newEvent);
+      console.log('✅ [Railway DB] Evento creato:', newEvent);
       res.status(201).json(newEvent);
     } catch (error: any) {
       console.error('❌ Errore nella creazione dell\'evento:', error);
