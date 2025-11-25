@@ -50,6 +50,7 @@ model Group {
   id          String   @id @default(cuid())
   name        String
   description String?
+  type        String?  // BAND, DJ, SOLO, etc.
   color       String?
   creatorId   String
   createdAt   DateTime @default(now())

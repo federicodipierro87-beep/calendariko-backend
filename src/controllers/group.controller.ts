@@ -112,7 +112,7 @@ export class GroupController {
 
   static async createGroup(req: AuthenticatedRequest, res: Response) {
     try {
-      const { name, description, color } = req.body;
+      const { name, description, type, color } = req.body;
       
       // Prova a salvare nel database reale
       try {
@@ -120,6 +120,7 @@ export class GroupController {
           data: {
             name,
             description,
+            type,
             color,
             creatorId: req.user!.id
           },
