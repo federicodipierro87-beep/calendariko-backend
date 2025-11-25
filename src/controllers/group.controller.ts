@@ -163,17 +163,65 @@ export class GroupController {
     try {
       const { id } = req.params;
       
-      // Per ora restituiamo un errore 404
-      // In futuro qui implementeremo la logica per eliminare il gruppo dal database
-      res.status(404).json({
-        success: false,
-        message: 'Gruppo non trovato'
+      console.log(`🗑️ [Railway DB] Tentativo di eliminazione gruppo ID: ${id}`);
+      
+      // Non permettere eliminazione di gruppi mock
+      if (id.startsWith('mock_')) {
+        console.log(`❌ Tentativo di eliminare gruppo mock ${id}`);
+        return res.status(400).json({
+          success: false,
+          message: 'I gruppi mock non possono essere eliminati'
+        });
+      }
+      
+      // Verifica se il gruppo esiste
+      const existingGroup = await prisma.group.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: {
+              events: true,
+              members: true
+            }
+          }
+        }
       });
-    } catch (error) {
-      console.error('Errore nell\'eliminazione del gruppo:', error);
+      
+      if (!existingGroup) {
+        console.log(`❌ Gruppo ${id} non trovato nel database`);
+        return res.status(404).json({
+          success: false,
+          message: 'Gruppo non trovato'
+        });
+      }
+      
+      console.log(`📊 Gruppo "${existingGroup.name}" ha ${existingGroup._count.events} eventi e ${existingGroup._count.members} membri`);
+      
+      // Elimina il gruppo (le relazioni verranno gestite dalle constraint del database)
+      await prisma.group.delete({
+        where: { id }
+      });
+      
+      console.log(`✅ [Railway DB] Gruppo "${existingGroup.name}" (ID: ${id}) eliminato con successo`);
+      res.status(200).json({
+        success: true,
+        message: `Gruppo "${existingGroup.name}" eliminato con successo`
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Errore nell\'eliminazione del gruppo:', error);
+      
+      // Gestisci errori specifici del database
+      if (error.code === 'P2003') {
+        return res.status(400).json({
+          success: false,
+          message: 'Impossibile eliminare il gruppo: contiene ancora eventi o membri'
+        });
+      }
+      
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }
