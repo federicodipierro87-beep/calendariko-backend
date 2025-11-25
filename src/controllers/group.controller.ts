@@ -166,19 +166,73 @@ export class GroupController {
   static async updateGroup(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const groupData = req.body;
+      const { name, description, type, color, genre, contact_email, contact_phone } = req.body;
       
-      // Per ora restituiamo un errore 404
-      // In futuro qui implementeremo la logica per aggiornare il gruppo nel database
-      res.status(404).json({
-        success: false,
-        message: 'Gruppo non trovato'
+      console.log(`✏️ [Railway DB] Tentativo di aggiornamento gruppo ID: ${id}`);
+      console.log(`📝 Dati ricevuti:`, { name, description, type, color, genre, contact_email, contact_phone });
+      
+      // Verifica se il gruppo esiste
+      const existingGroup = await prisma.group.findUnique({
+        where: { id }
       });
-    } catch (error) {
-      console.error('Errore nell\'aggiornamento del gruppo:', error);
+      
+      if (!existingGroup) {
+        console.log(`❌ Gruppo ${id} non trovato nel database`);
+        return res.status(404).json({
+          success: false,
+          message: 'Gruppo non trovato'
+        });
+      }
+      
+      // Aggiorna il gruppo nel database
+      const updatedGroup = await prisma.group.update({
+        where: { id },
+        data: {
+          name: name || existingGroup.name,
+          description: description || existingGroup.description,
+          type: type || existingGroup.type,
+          color: color || existingGroup.color
+          // Note: genre, contact_email, contact_phone non sono nel schema attuale
+          // Se necessari, vanno aggiunti al modello Group
+        },
+        include: {
+          creator: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          members: {
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, email: true, role: true }
+              }
+            }
+          }
+        }
+      });
+      
+      // Trasforma i dati per compatibilità frontend
+      const groupWithUserGroups = {
+        ...updatedGroup,
+        user_groups: updatedGroup.members.map(member => ({
+          user_id: member.user.id,
+          group_id: updatedGroup.id,
+          user: {
+            id: member.user.id,
+            first_name: member.user.firstName,
+            last_name: member.user.lastName,
+            email: member.user.email,
+            role: member.user.role
+          }
+        }))
+      };
+      
+      console.log(`✅ [Railway DB] Gruppo "${updatedGroup.name}" aggiornato con successo`);
+      res.status(200).json(groupWithUserGroups);
+      
+    } catch (error: any) {
+      console.error('❌ Errore nell\'aggiornamento del gruppo:', error);
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }
