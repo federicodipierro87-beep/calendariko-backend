@@ -25,7 +25,7 @@ export class EventController {
         orderBy: { startTime: 'asc' }
       });
       
-      console.log(`📅 Recuperati ${events.length} eventi per utente ${req.user?.role}: ${req.user?.email}`);
+      console.log(`📅 [Railway DB] Recuperati ${events.length} eventi per utente ${req.user?.role}: ${req.user?.email}`);
       res.status(200).json(events);
     } catch (error: any) {
       console.error('Errore nel recupero degli eventi:', error);
@@ -136,7 +136,7 @@ export class EventController {
         }
       });
       
-      console.log('✅ Evento creato:', newEvent);
+      console.log('✅ [Railway DB] Evento creato:', newEvent);
       res.status(201).json(newEvent);
     } catch (error: any) {
       console.error('❌ Errore nella creazione dell\'evento:', error);
@@ -178,17 +178,36 @@ export class EventController {
     try {
       const { id } = req.params;
       
-      // Per ora restituiamo un errore 404
-      // In futuro qui implementeremo la logica per eliminare l'evento dal database
-      res.status(404).json({
-        success: false,
-        message: 'Evento non trovato'
+      console.log(`🗑️ [Railway DB] Tentativo di eliminazione evento ID: ${id}`);
+      
+      // Verifica se l'evento esiste
+      const existingEvent = await prisma.event.findUnique({
+        where: { id }
       });
-    } catch (error) {
-      console.error('Errore nell\'eliminazione dell\'evento:', error);
+      
+      if (!existingEvent) {
+        console.log(`❌ Evento ${id} non trovato nel database`);
+        return res.status(404).json({
+          success: false,
+          message: 'Evento non trovato'
+        });
+      }
+      
+      // Elimina l'evento dal database
+      await prisma.event.delete({
+        where: { id }
+      });
+      
+      console.log(`✅ [Railway DB] Evento ${id} eliminato con successo`);
+      res.status(200).json({
+        success: true,
+        message: 'Evento eliminato con successo'
+      });
+    } catch (error: any) {
+      console.error('❌ Errore nell\'eliminazione dell\'evento:', error);
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }

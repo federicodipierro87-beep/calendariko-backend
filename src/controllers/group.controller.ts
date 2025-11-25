@@ -57,6 +57,13 @@ export class GroupController {
           include: {
             creator: {
               select: { firstName: true, lastName: true, email: true }
+            },
+            members: {
+              include: {
+                user: {
+                  select: { id: true, firstName: true, lastName: true, email: true, role: true }
+                }
+              }
             }
           }
         });
@@ -68,8 +75,24 @@ export class GroupController {
           });
         }
 
-        console.log(`✅ Retrieved group "${group.name}" with ID ${id}`);
-        res.status(200).json(group);
+        // Trasforma i dati per compatibilità frontend
+        const groupWithUserGroups = {
+          ...group,
+          user_groups: group.members.map(member => ({
+            user_id: member.user.id,
+            group_id: group.id,
+            user: {
+              id: member.user.id,
+              first_name: member.user.firstName,
+              last_name: member.user.lastName,
+              email: member.user.email,
+              role: member.user.role
+            }
+          }))
+        };
+
+        console.log(`✅ Retrieved group "${group.name}" with ${group.members.length} members`);
+        res.status(200).json(groupWithUserGroups);
 
       } catch (dbError: any) {
         console.log('⚠️ Database not available for getGroupById:', dbError.message);
@@ -89,7 +112,7 @@ export class GroupController {
 
   static async createGroup(req: AuthenticatedRequest, res: Response) {
     try {
-      const { name, description, color } = req.body;
+      const { name, description, type, color } = req.body;
       
       // Prova a salvare nel database reale
       try {
@@ -97,6 +120,7 @@ export class GroupController {
           data: {
             name,
             description,
+            type,
             color,
             creatorId: req.user!.id
           },
@@ -142,19 +166,73 @@ export class GroupController {
   static async updateGroup(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const groupData = req.body;
+      const { name, description, type, color, genre, contact_email, contact_phone } = req.body;
       
-      // Per ora restituiamo un errore 404
-      // In futuro qui implementeremo la logica per aggiornare il gruppo nel database
-      res.status(404).json({
-        success: false,
-        message: 'Gruppo non trovato'
+      console.log(`✏️ [Railway DB] Tentativo di aggiornamento gruppo ID: ${id}`);
+      console.log(`📝 Dati ricevuti:`, { name, description, type, color, genre, contact_email, contact_phone });
+      
+      // Verifica se il gruppo esiste
+      const existingGroup = await prisma.group.findUnique({
+        where: { id }
       });
-    } catch (error) {
-      console.error('Errore nell\'aggiornamento del gruppo:', error);
+      
+      if (!existingGroup) {
+        console.log(`❌ Gruppo ${id} non trovato nel database`);
+        return res.status(404).json({
+          success: false,
+          message: 'Gruppo non trovato'
+        });
+      }
+      
+      // Aggiorna il gruppo nel database
+      const updatedGroup = await prisma.group.update({
+        where: { id },
+        data: {
+          name: name || existingGroup.name,
+          description: description || existingGroup.description,
+          type: type || existingGroup.type,
+          color: color || existingGroup.color
+          // Note: genre, contact_email, contact_phone non sono nel schema attuale
+          // Se necessari, vanno aggiunti al modello Group
+        },
+        include: {
+          creator: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          members: {
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, email: true, role: true }
+              }
+            }
+          }
+        }
+      });
+      
+      // Trasforma i dati per compatibilità frontend
+      const groupWithUserGroups = {
+        ...updatedGroup,
+        user_groups: updatedGroup.members.map(member => ({
+          user_id: member.user.id,
+          group_id: updatedGroup.id,
+          user: {
+            id: member.user.id,
+            first_name: member.user.firstName,
+            last_name: member.user.lastName,
+            email: member.user.email,
+            role: member.user.role
+          }
+        }))
+      };
+      
+      console.log(`✅ [Railway DB] Gruppo "${updatedGroup.name}" aggiornato con successo`);
+      res.status(200).json(groupWithUserGroups);
+      
+    } catch (error: any) {
+      console.error('❌ Errore nell\'aggiornamento del gruppo:', error);
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }
@@ -163,17 +241,65 @@ export class GroupController {
     try {
       const { id } = req.params;
       
-      // Per ora restituiamo un errore 404
-      // In futuro qui implementeremo la logica per eliminare il gruppo dal database
-      res.status(404).json({
-        success: false,
-        message: 'Gruppo non trovato'
+      console.log(`🗑️ [Railway DB] Tentativo di eliminazione gruppo ID: ${id}`);
+      
+      // Non permettere eliminazione di gruppi mock
+      if (id.startsWith('mock_')) {
+        console.log(`❌ Tentativo di eliminare gruppo mock ${id}`);
+        return res.status(400).json({
+          success: false,
+          message: 'I gruppi mock non possono essere eliminati'
+        });
+      }
+      
+      // Verifica se il gruppo esiste
+      const existingGroup = await prisma.group.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: {
+              events: true,
+              members: true
+            }
+          }
+        }
       });
-    } catch (error) {
-      console.error('Errore nell\'eliminazione del gruppo:', error);
+      
+      if (!existingGroup) {
+        console.log(`❌ Gruppo ${id} non trovato nel database`);
+        return res.status(404).json({
+          success: false,
+          message: 'Gruppo non trovato'
+        });
+      }
+      
+      console.log(`📊 Gruppo "${existingGroup.name}" ha ${existingGroup._count.events} eventi e ${existingGroup._count.members} membri`);
+      
+      // Elimina il gruppo (le relazioni verranno gestite dalle constraint del database)
+      await prisma.group.delete({
+        where: { id }
+      });
+      
+      console.log(`✅ [Railway DB] Gruppo "${existingGroup.name}" (ID: ${id}) eliminato con successo`);
+      res.status(200).json({
+        success: true,
+        message: `Gruppo "${existingGroup.name}" eliminato con successo`
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Errore nell\'eliminazione del gruppo:', error);
+      
+      // Gestisci errori specifici del database
+      if (error.code === 'P2003') {
+        return res.status(400).json({
+          success: false,
+          message: 'Impossibile eliminare il gruppo: contiene ancora eventi o membri'
+        });
+      }
+      
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }
