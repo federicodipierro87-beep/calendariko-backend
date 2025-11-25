@@ -6,9 +6,14 @@ const prisma = new PrismaClient();
 export class UserController {
   static async getUsersWithoutGroup(req: Request, res: Response) {
     try {
-      // Per ora restituiamo tutti gli utenti dato che non abbiamo ancora implementato i gruppi
-      // In futuro qui implementeremo la logica per trovare utenti senza gruppi
+      // Restituisce utenti che non sono admin e non sono ancora assegnati a gruppi
+      // Gli admin non devono essere assegnati a gruppi
       const users = await prisma.user.findMany({
+        where: {
+          role: {
+            not: 'ADMIN' // Esclude gli utenti admin
+          }
+        },
         select: {
           id: true,
           email: true,
