@@ -144,7 +144,7 @@ export class EventController {
         console.log('🚀 Tentativo di invio email per evento creato');
         await this.sendEventNotifications(newEvent);
         console.log('✅ Email inviate con successo');
-      } catch (emailError) {
+      } catch (emailError: any) {
         console.error('⚠️ Errore nell\'invio email per evento:', emailError);
         console.error('⚠️ Stack trace:', emailError.stack);
         // Non interrompe la creazione dell'evento se l'email fallisce
