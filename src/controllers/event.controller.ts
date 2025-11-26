@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { EmailService } from '../services/email.service';
 
 const prisma = new PrismaClient();
 
@@ -137,6 +138,15 @@ export class EventController {
       });
       
       console.log('✅ [Railway DB] Evento creato:', newEvent);
+
+      // Invia email di notifica a tutti i membri del gruppo (se esiste)
+      try {
+        await this.sendEventNotifications(newEvent);
+      } catch (emailError) {
+        console.error('⚠️ Errore nell\'invio email per evento:', emailError);
+        // Non interrompe la creazione dell'evento se l'email fallisce
+      }
+
       res.status(201).json(newEvent);
     } catch (error: any) {
       console.error('❌ Errore nella creazione dell\'evento:', error);
@@ -209,6 +219,73 @@ export class EventController {
         success: false,
         message: `Errore interno del server: ${error.message}`
       });
+    }
+  }
+
+  private static async sendEventNotifications(event: any): Promise<void> {
+    try {
+      console.log('📧 Preparazione invio email per evento:', event.title);
+
+      // Lista email destinatari
+      const recipientEmails: string[] = [];
+
+      // Aggiungi l'email dell'organizzatore
+      if (event.user && event.user.email) {
+        recipientEmails.push(event.user.email);
+        console.log('📧 Aggiunto organizzatore:', event.user.email);
+      }
+
+      // Se l'evento ha un gruppo, aggiungi tutti i membri del gruppo
+      if (event.groupId) {
+        const groupWithMembers = await prisma.group.findUnique({
+          where: { id: event.groupId },
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: { email: true, firstName: true, lastName: true }
+                }
+              }
+            }
+          }
+        });
+
+        if (groupWithMembers && groupWithMembers.members) {
+          for (const member of groupWithMembers.members) {
+            if (member.user.email && !recipientEmails.includes(member.user.email)) {
+              recipientEmails.push(member.user.email);
+              console.log('📧 Aggiunto membro gruppo:', member.user.email);
+            }
+          }
+        }
+      }
+
+      // Se non ci sono destinatari, non inviare email
+      if (recipientEmails.length === 0) {
+        console.log('⚠️ Nessun destinatario trovato per l\'evento');
+        return;
+      }
+
+      console.log(`📧 Invio email a ${recipientEmails.length} destinatari:`, recipientEmails);
+
+      // Prepara i dati per l'email
+      const eventData = {
+        eventTitle: event.title,
+        eventDescription: event.description || undefined,
+        eventLocation: event.location || undefined,
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+        groupName: event.group?.name || undefined,
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined
+      };
+
+      // Invia la email
+      await EmailService.sendEventNotification(recipientEmails, eventData);
+      console.log('✅ Email evento inviata con successo');
+
+    } catch (error) {
+      console.error('❌ Errore nell\'invio email evento:', error);
+      throw error;
     }
   }
 }
