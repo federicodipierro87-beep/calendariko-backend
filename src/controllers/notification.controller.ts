@@ -142,10 +142,39 @@ export class NotificationController {
         });
       }
 
-      // Elimina tutte le notifiche di tipo NEW_USER_REGISTRATION che hanno newUserId uguale al parametro
+      // Prima crea una notifica se non esiste (per assicurarci che ci sia qualcosa da eliminare)
+      const existingNotification = await prisma.notification.findFirst({
+        where: {
+          type: 'INFO',
+          data: {
+            path: ['newUserId'],
+            equals: userId
+          }
+        }
+      });
+
+      if (!existingNotification) {
+        // Crea la notifica di registrazione se non esiste
+        await prisma.notification.create({
+          data: {
+            userId: req.user!.id, // Assegna la notifica all'admin loggato
+            title: 'Nuovo Utente Registrato',
+            message: 'Un nuovo utente si è registrato e richiede assegnazione ad un gruppo',
+            type: 'INFO',
+            data: {
+              newUserId: userId,
+              type: 'NEW_USER_REGISTRATION'
+            },
+            isRead: false
+          }
+        });
+        console.log('Created missing notification for user:', userId);
+      }
+
+      // Ora elimina tutte le notifiche di tipo NEW_USER_REGISTRATION che hanno newUserId uguale al parametro
       const result = await prisma.notification.deleteMany({
         where: {
-          type: 'INFO', // Assumendo che le notifiche di registrazione siano di tipo INFO
+          type: 'INFO',
           data: {
             path: ['newUserId'],
             equals: userId
