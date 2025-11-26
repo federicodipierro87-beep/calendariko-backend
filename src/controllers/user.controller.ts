@@ -6,14 +6,30 @@ const prisma = new PrismaClient();
 export class UserController {
   static async getUsersWithoutGroup(req: Request, res: Response) {
     try {
-      // Restituisce utenti che non sono admin e non sono ancora assegnati a gruppi
-      // Gli admin non devono essere assegnati a gruppi
-      const users = await prisma.user.findMany({
-        where: {
-          role: {
-            not: 'ADMIN' // Esclude gli utenti admin
+      const { excludeGroupId } = req.query;
+      
+      let whereClause: any = {
+        role: {
+          not: 'ADMIN' // Esclude gli utenti admin
+        }
+      };
+
+      // Se viene specificato un gruppo da escludere, filtra gli utenti che NON sono in quel gruppo
+      if (excludeGroupId && typeof excludeGroupId === 'string') {
+        whereClause.groupMemberships = {
+          none: {
+            groupId: excludeGroupId
           }
-        },
+        };
+      } else {
+        // Se non viene specificato un gruppo, mostra utenti che non sono in NESSUN gruppo
+        whereClause.groupMemberships = {
+          none: {}
+        };
+      }
+
+      const users = await prisma.user.findMany({
+        where: whereClause,
         select: {
           id: true,
           email: true,
@@ -21,7 +37,18 @@ export class UserController {
           lastName: true,
           role: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          groupMemberships: {
+            select: {
+              groupId: true,
+              group: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          }
         }
       });
       
