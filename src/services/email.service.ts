@@ -22,7 +22,7 @@ export interface EventNotificationData {
 }
 
 export class EmailService {
-  private static readonly FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@calendariko.com';
+  private static readonly FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@easysolution-dp.com';
   private static readonly APP_NAME = 'Calendariko';
 
   static async sendEmail(options: EmailOptions): Promise<void> {
