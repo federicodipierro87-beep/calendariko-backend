@@ -119,6 +119,7 @@ model Notification {
   title     String
   message   String
   type      NotificationType @default(INFO)
+  data      Json?            // Campo per dati aggiuntivi (es. newUserId per registrazioni)
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
