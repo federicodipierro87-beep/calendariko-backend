@@ -228,6 +228,7 @@ export class EventController {
   private static async sendEventNotifications(event: any): Promise<void> {
     try {
       console.log('📧 Preparazione invio email per evento:', event.title);
+      console.log('📧 Event data received:', JSON.stringify(event, null, 2));
 
       // Lista email destinatari
       const recipientEmails: string[] = [];
@@ -283,11 +284,13 @@ export class EventController {
       };
 
       // Invia la email
+      console.log('📧 Chiamando EmailService.sendEventNotification...');
       await EmailService.sendEventNotification(recipientEmails, eventData);
       console.log('✅ Email evento inviata con successo');
 
     } catch (error) {
       console.error('❌ Errore nell\'invio email evento:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       throw error;
     }
   }
