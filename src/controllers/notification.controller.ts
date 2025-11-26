@@ -89,22 +89,6 @@ export class NotificationController {
     }
   }
 
-  static async markAsRead(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      
-      res.status(404).json({
-        success: false,
-        message: 'Notifica non trovata'
-      });
-    } catch (error) {
-      console.error('Errore nella marcatura della notifica come letta:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Errore interno del server'
-      });
-    }
-  }
 
   static async deleteNotification(req: AuthenticatedRequest, res: Response) {
     try {
