@@ -29,6 +29,8 @@ export class EmailService {
     try {
       console.log('📧 Sending email to:', options.to);
       console.log('📧 Subject:', options.subject);
+      console.log('📧 RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+      console.log('📧 FROM_EMAIL:', process.env.FROM_EMAIL || 'using default');
 
       if (!process.env.RESEND_API_KEY) {
         console.warn('⚠️ RESEND_API_KEY not configured, email sending disabled');
