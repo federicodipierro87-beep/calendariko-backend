@@ -375,7 +375,10 @@ export class EventController {
         startTime: new Date(event.startTime),
         endTime: new Date(event.endTime),
         groupName: event.group?.name || undefined,
-        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined,
+        fee: event.fee || undefined,
+        contactResponsible: event.contact_responsible || undefined,
+        notes: event.description || undefined  // Le note sono spesso salvate in description
       };
 
       // Invia la email
@@ -444,7 +447,10 @@ export class EventController {
         startTime: new Date(event.startTime),
         endTime: new Date(event.endTime),
         groupName: event.group?.name || undefined,
-        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined,
+        fee: event.fee || undefined,
+        contactResponsible: event.contact_responsible || undefined,
+        notes: event.description || undefined  // Le note sono spesso salvate in description
       };
 
       // Invia la email di modifica
@@ -511,7 +517,10 @@ export class EventController {
         startTime: new Date(event.startTime),
         endTime: new Date(event.endTime),
         groupName: event.group?.name || undefined,
-        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined,
+        fee: event.fee || undefined,
+        contactResponsible: event.contact_responsible || undefined,
+        notes: event.description || undefined  // Le note sono spesso salvate in description
       };
 
       // Invia la email di eliminazione

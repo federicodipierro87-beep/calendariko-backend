@@ -19,6 +19,9 @@ export interface EventNotificationData {
   endTime: Date;
   groupName?: string;
   organizerName?: string;
+  fee?: number;
+  contactResponsible?: string;
+  notes?: string;
 }
 
 export class EmailService {
@@ -127,6 +130,24 @@ export class EmailService {
               ${eventData.organizerName ? `
                 <div class="detail-row">
                   <span class="detail-label">👤 Organizzatore:</span> ${eventData.organizerName}
+                </div>
+              ` : ''}
+              
+              ${eventData.fee !== undefined && eventData.fee !== null ? `
+                <div class="detail-row">
+                  <span class="detail-label">💰 Cachet:</span> €${eventData.fee}
+                </div>
+              ` : ''}
+              
+              ${eventData.contactResponsible ? `
+                <div class="detail-row">
+                  <span class="detail-label">📞 Contatto responsabile:</span> ${eventData.contactResponsible}
+                </div>
+              ` : ''}
+              
+              ${eventData.notes ? `
+                <div class="detail-row">
+                  <span class="detail-label">📝 Note:</span> ${eventData.notes}
                 </div>
               ` : ''}
             </div>
@@ -300,6 +321,24 @@ Riceverai una notifica via email quando il tuo account sarà attivo.
                   <span class="detail-label">👤 Organizzatore:</span> ${eventData.organizerName}
                 </div>
               ` : ''}
+              
+              ${eventData.fee !== undefined && eventData.fee !== null ? `
+                <div class="detail-row">
+                  <span class="detail-label">💰 Cachet:</span> €${eventData.fee}
+                </div>
+              ` : ''}
+              
+              ${eventData.contactResponsible ? `
+                <div class="detail-row">
+                  <span class="detail-label">📞 Contatto responsabile:</span> ${eventData.contactResponsible}
+                </div>
+              ` : ''}
+              
+              ${eventData.notes ? `
+                <div class="detail-row">
+                  <span class="detail-label">📝 Note:</span> ${eventData.notes}
+                </div>
+              ` : ''}
             </div>
             
             <p>Accedi alla piattaforma per visualizzare tutti i dettagli aggiornati.</p>
@@ -324,6 +363,9 @@ ${eventData.eventDescription ? `Descrizione: ${eventData.eventDescription}\\n` :
 ${eventData.eventLocation ? `📍 Luogo: ${eventData.eventLocation}\\n` : ''}
 ${eventData.groupName ? `👥 Gruppo: ${eventData.groupName}\\n` : ''}
 ${eventData.organizerName ? `👤 Organizzatore: ${eventData.organizerName}\\n` : ''}
+${eventData.fee !== undefined && eventData.fee !== null ? `💰 Cachet: €${eventData.fee}\\n` : ''}
+${eventData.contactResponsible ? `📞 Contatto responsabile: ${eventData.contactResponsible}\\n` : ''}
+${eventData.notes ? `📝 Note: ${eventData.notes}\\n` : ''}
 
 Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli aggiornati.
     `;
@@ -414,6 +456,24 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli aggio
                   <span class="detail-label">👤 Organizzatore:</span> ${eventData.organizerName}
                 </div>
               ` : ''}
+              
+              ${eventData.fee !== undefined && eventData.fee !== null ? `
+                <div class="detail-row">
+                  <span class="detail-label">💰 Cachet:</span> €${eventData.fee}
+                </div>
+              ` : ''}
+              
+              ${eventData.contactResponsible ? `
+                <div class="detail-row">
+                  <span class="detail-label">📞 Contatto responsabile:</span> ${eventData.contactResponsible}
+                </div>
+              ` : ''}
+              
+              ${eventData.notes ? `
+                <div class="detail-row">
+                  <span class="detail-label">📝 Note:</span> ${eventData.notes}
+                </div>
+              ` : ''}
             </div>
             
             <p>Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.</p>
@@ -437,6 +497,9 @@ ${eventData.eventDescription ? `Descrizione: ${eventData.eventDescription}\\n` :
 ${eventData.eventLocation ? `📍 Luogo: ${eventData.eventLocation}\\n` : ''}
 ${eventData.groupName ? `👥 Gruppo: ${eventData.groupName}\\n` : ''}
 ${eventData.organizerName ? `👤 Organizzatore: ${eventData.organizerName}\\n` : ''}
+${eventData.fee !== undefined && eventData.fee !== null ? `💰 Cachet: €${eventData.fee}\\n` : ''}
+${eventData.contactResponsible ? `📞 Contatto responsabile: ${eventData.contactResponsible}\\n` : ''}
+${eventData.notes ? `📝 Note: ${eventData.notes}\\n` : ''}
 
 Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.
     `;
