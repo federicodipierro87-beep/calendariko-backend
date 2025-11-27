@@ -95,7 +95,8 @@ export class EventController {
       if (startTime) {
         eventStartTime = new Date(startTime);
       } else if (date && start_time) {
-        eventStartTime = new Date(`${date}T${start_time}`);
+        // Specifica fuso orario Europe/Rome per evitare conversioni UTC indesiderate
+        eventStartTime = new Date(`${date}T${start_time}:00`);
       } else {
         throw new Error('startTime or date+start_time required');
       }
@@ -103,7 +104,8 @@ export class EventController {
       if (endTime) {
         eventEndTime = new Date(endTime);
       } else if (date && end_time) {
-        eventEndTime = new Date(`${date}T${end_time}`);
+        // Specifica fuso orario Europe/Rome per evitare conversioni UTC indesiderate  
+        eventEndTime = new Date(`${date}T${end_time}:00`);
       } else {
         throw new Error('endTime or date+end_time required');
       }
@@ -116,6 +118,12 @@ export class EventController {
         location: eventLocation,
         groupId: eventGroupId,
         userId: req.user!.id
+      });
+      console.log('🕐 Orari creati:', {
+        startTimeString: eventStartTime.toISOString(),
+        endTimeString: eventEndTime.toISOString(),
+        startTimeLocal: eventStartTime.toLocaleString('it-IT', { timeZone: 'Europe/Rome' }),
+        endTimeLocal: eventEndTime.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })
       });
       
       // Crea un nuovo evento nel database
@@ -214,13 +222,13 @@ export class EventController {
       if (eventData.startTime) {
         updateData.startTime = new Date(eventData.startTime);
       } else if (eventData.date && eventData.start_time) {
-        updateData.startTime = new Date(`${eventData.date}T${eventData.start_time}`);
+        updateData.startTime = new Date(`${eventData.date}T${eventData.start_time}:00`);
       }
       
       if (eventData.endTime) {
         updateData.endTime = new Date(eventData.endTime);
       } else if (eventData.date && eventData.end_time) {
-        updateData.endTime = new Date(`${eventData.date}T${eventData.end_time}`);
+        updateData.endTime = new Date(`${eventData.date}T${eventData.end_time}:00`);
       }
       
       console.log('📝 Dati normalizzati per aggiornamento:', updateData);
