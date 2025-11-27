@@ -226,6 +226,18 @@ export class EventController {
       });
       
       console.log(`✅ [Railway DB] Evento ${id} aggiornato con successo`);
+      
+      // Invia email di notifica per la modifica
+      try {
+        console.log('📧 Tentativo di invio email per evento modificato');
+        await EventController.sendEventUpdateNotification(updatedEvent);
+        console.log('✅ Email di modifica inviate con successo');
+      } catch (emailError: any) {
+        console.error('⚠️ Errore nell\'invio email per modifica evento:', emailError);
+        console.error('⚠️ Stack trace:', emailError.stack);
+        // Non interrompe l'aggiornamento dell'evento se l'email fallisce
+      }
+      
       res.status(200).json(updatedEvent);
       
     } catch (error: any) {
@@ -243,9 +255,17 @@ export class EventController {
       
       console.log(`🗑️ [Railway DB] Tentativo di eliminazione evento ID: ${id}`);
       
-      // Verifica se l'evento esiste
+      // Verifica se l'evento esiste e recupera i dati completi per l'email
       const existingEvent = await prisma.event.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          group: {
+            select: { id: true, name: true, color: true }
+          }
+        }
       });
       
       if (!existingEvent) {
@@ -254,6 +274,17 @@ export class EventController {
           success: false,
           message: 'Evento non trovato'
         });
+      }
+      
+      // Invia email di notifica PRIMA di eliminare l'evento
+      try {
+        console.log('📧 Tentativo di invio email per evento eliminato');
+        await EventController.sendEventDeleteNotification(existingEvent);
+        console.log('✅ Email di eliminazione inviate con successo');
+      } catch (emailError: any) {
+        console.error('⚠️ Errore nell\'invio email per eliminazione evento:', emailError);
+        console.error('⚠️ Stack trace:', emailError.stack);
+        // Non interrompe l'eliminazione dell'evento se l'email fallisce
       }
       
       // Elimina l'evento dal database
@@ -341,6 +372,140 @@ export class EventController {
     } catch (error) {
       console.error('❌ Errore nell\'invio email evento:', error);
       console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      throw error;
+    }
+  }
+
+  private static async sendEventUpdateNotification(event: any): Promise<void> {
+    try {
+      console.log('📧 Preparazione invio email per modifica evento:', event.title);
+
+      // Lista email destinatari
+      const recipientEmails: string[] = [];
+
+      // Aggiungi l'email dell'organizzatore
+      if (event.user && event.user.email) {
+        recipientEmails.push(event.user.email);
+        console.log('📧 Aggiunto organizzatore:', event.user.email);
+      }
+
+      // Se l'evento ha un gruppo, aggiungi tutti i membri del gruppo
+      if (event.groupId) {
+        const groupWithMembers = await prisma.group.findUnique({
+          where: { id: event.groupId },
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: { email: true, firstName: true, lastName: true }
+                }
+              }
+            }
+          }
+        });
+
+        if (groupWithMembers && groupWithMembers.members) {
+          for (const member of groupWithMembers.members) {
+            if (member.user.email && !recipientEmails.includes(member.user.email)) {
+              recipientEmails.push(member.user.email);
+              console.log('📧 Aggiunto membro gruppo:', member.user.email);
+            }
+          }
+        }
+      }
+
+      // Se non ci sono destinatari, non inviare email
+      if (recipientEmails.length === 0) {
+        console.log('⚠️ Nessun destinatario trovato per la modifica evento');
+        return;
+      }
+
+      console.log(`📧 Invio email modifica a ${recipientEmails.length} destinatari:`, recipientEmails);
+
+      // Prepara i dati per l'email
+      const eventData = {
+        eventTitle: event.title,
+        eventDescription: event.description || undefined,
+        eventLocation: event.location || undefined,
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+        groupName: event.group?.name || undefined,
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined
+      };
+
+      // Invia la email di modifica
+      await EmailService.sendEventUpdateNotification(recipientEmails, eventData);
+      console.log('✅ Email modifica evento inviata con successo');
+
+    } catch (error) {
+      console.error('❌ Errore nell\'invio email modifica evento:', error);
+      throw error;
+    }
+  }
+
+  private static async sendEventDeleteNotification(event: any): Promise<void> {
+    try {
+      console.log('📧 Preparazione invio email per eliminazione evento:', event.title);
+
+      // Lista email destinatari
+      const recipientEmails: string[] = [];
+
+      // Aggiungi l'email dell'organizzatore
+      if (event.user && event.user.email) {
+        recipientEmails.push(event.user.email);
+        console.log('📧 Aggiunto organizzatore:', event.user.email);
+      }
+
+      // Se l'evento ha un gruppo, aggiungi tutti i membri del gruppo
+      if (event.groupId) {
+        const groupWithMembers = await prisma.group.findUnique({
+          where: { id: event.groupId },
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: { email: true, firstName: true, lastName: true }
+                }
+              }
+            }
+          }
+        });
+
+        if (groupWithMembers && groupWithMembers.members) {
+          for (const member of groupWithMembers.members) {
+            if (member.user.email && !recipientEmails.includes(member.user.email)) {
+              recipientEmails.push(member.user.email);
+              console.log('📧 Aggiunto membro gruppo:', member.user.email);
+            }
+          }
+        }
+      }
+
+      // Se non ci sono destinatari, non inviare email
+      if (recipientEmails.length === 0) {
+        console.log('⚠️ Nessun destinatario trovato per l\'eliminazione evento');
+        return;
+      }
+
+      console.log(`📧 Invio email eliminazione a ${recipientEmails.length} destinatari:`, recipientEmails);
+
+      // Prepara i dati per l'email
+      const eventData = {
+        eventTitle: event.title,
+        eventDescription: event.description || undefined,
+        eventLocation: event.location || undefined,
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+        groupName: event.group?.name || undefined,
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined
+      };
+
+      // Invia la email di eliminazione
+      await EmailService.sendEventDeleteNotification(recipientEmails, eventData);
+      console.log('✅ Email eliminazione evento inviata con successo');
+
+    } catch (error) {
+      console.error('❌ Errore nell\'invio email eliminazione evento:', error);
       throw error;
     }
   }
