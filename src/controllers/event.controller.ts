@@ -95,8 +95,19 @@ export class EventController {
       if (startTime) {
         eventStartTime = new Date(startTime);
       } else if (date && start_time) {
-        // Specifica fuso orario Europe/Rome per evitare conversioni UTC indesiderate
-        eventStartTime = new Date(`${date}T${start_time}:00`);
+        // Crea timestamp assumendo fuso orario Europe/Rome per evitare conversioni UTC
+        const dateTimeString = `${date}T${start_time}:00`;
+        
+        // Crea la data specificando esplicitamente che è in timezone locale italiano
+        // Aggiunge offset timezone manualmente per evitare conversioni automatiche
+        const tempDate = new Date(dateTimeString);
+        const timezoneOffset = 60; // CET/CEST offset in minuti (1 ora)
+        eventStartTime = new Date(tempDate.getTime() - (timezoneOffset * 60 * 1000));
+        
+        console.log(`🕐 Start time: ${date}T${start_time}:00`);
+        console.log(`🕐 Temp date: ${tempDate.toISOString()}`);
+        console.log(`🕐 Final start time (offset applied): ${eventStartTime.toISOString()}`);
+        console.log(`🕐 Final start time local: ${eventStartTime.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}`);
       } else {
         throw new Error('startTime or date+start_time required');
       }
@@ -104,8 +115,19 @@ export class EventController {
       if (endTime) {
         eventEndTime = new Date(endTime);
       } else if (date && end_time) {
-        // Specifica fuso orario Europe/Rome per evitare conversioni UTC indesiderate  
-        eventEndTime = new Date(`${date}T${end_time}:00`);
+        // Crea timestamp assumendo fuso orario Europe/Rome per evitare conversioni UTC
+        const dateTimeString = `${date}T${end_time}:00`;
+        
+        // Crea la data specificando esplicitamente che è in timezone locale italiano
+        // Aggiunge offset timezone manualmente per evitare conversioni automatiche
+        const tempDate = new Date(dateTimeString);
+        const timezoneOffset = 60; // CET/CEST offset in minuti (1 ora)
+        eventEndTime = new Date(tempDate.getTime() - (timezoneOffset * 60 * 1000));
+        
+        console.log(`🕐 End time: ${date}T${end_time}:00`);
+        console.log(`🕐 Temp date: ${tempDate.toISOString()}`);
+        console.log(`🕐 Final end time (offset applied): ${eventEndTime.toISOString()}`);
+        console.log(`🕐 Final end time local: ${eventEndTime.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}`);
       } else {
         throw new Error('endTime or date+end_time required');
       }
@@ -222,13 +244,21 @@ export class EventController {
       if (eventData.startTime) {
         updateData.startTime = new Date(eventData.startTime);
       } else if (eventData.date && eventData.start_time) {
-        updateData.startTime = new Date(`${eventData.date}T${eventData.start_time}:00`);
+        const dateTimeString = `${eventData.date}T${eventData.start_time}:00`;
+        const tempDate = new Date(dateTimeString);
+        const timezoneOffset = 60; // CET/CEST offset in minuti (1 ora)
+        updateData.startTime = new Date(tempDate.getTime() - (timezoneOffset * 60 * 1000));
+        console.log(`🕐 Update start time: ${dateTimeString} -> ${updateData.startTime.toISOString()}`);
       }
       
       if (eventData.endTime) {
         updateData.endTime = new Date(eventData.endTime);
       } else if (eventData.date && eventData.end_time) {
-        updateData.endTime = new Date(`${eventData.date}T${eventData.end_time}:00`);
+        const dateTimeString = `${eventData.date}T${eventData.end_time}:00`;
+        const tempDate = new Date(dateTimeString);
+        const timezoneOffset = 60; // CET/CEST offset in minuti (1 ora)
+        updateData.endTime = new Date(tempDate.getTime() - (timezoneOffset * 60 * 1000));
+        console.log(`🕐 Update end time: ${dateTimeString} -> ${updateData.endTime.toISOString()}`);
       }
       
       console.log('📝 Dati normalizzati per aggiornamento:', updateData);
