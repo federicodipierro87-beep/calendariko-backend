@@ -84,7 +84,7 @@ export class EventController {
       
       // Normalizza i dati per il database Prisma
       const eventTitle = title || req.body.title;
-      const eventDescription = description || event_type || notes || '';
+      const eventDescription = description || notes || '';
       const eventLocation = location || venue_name || '';
       const eventGroupId = groupId || group_id;
       
