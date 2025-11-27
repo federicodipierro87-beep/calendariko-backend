@@ -87,7 +87,7 @@ model Event {
   status               EventStatus @default(PENDING)
   userId               String
   groupId              String?
-  fee                  Float?      // Cachet dell'evento
+  fee                  Int?        // Cachet dell'evento (in euro, senza decimali)
   contact_responsible  String?     // Contatto responsabile dell'evento
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt

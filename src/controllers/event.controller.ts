@@ -127,7 +127,7 @@ export class EventController {
           endTime: eventEndTime,
           location: eventLocation,
           groupId: eventGroupId,
-          fee: fee ? (typeof fee === 'string' ? parseFloat(fee) : fee) : null,
+          fee: fee ? (typeof fee === 'string' ? parseInt(fee, 10) : Math.round(fee)) : null,
           contact_responsible: contact_responsible || null,
           userId: req.user!.id
         },
@@ -202,7 +202,7 @@ export class EventController {
       
       // Gestisce fee (cachet) - può essere 0 quindi controllo !== undefined
       if (eventData.fee !== undefined) {
-        updateData.fee = typeof eventData.fee === 'string' ? parseFloat(eventData.fee) : eventData.fee;
+        updateData.fee = typeof eventData.fee === 'string' ? parseInt(eventData.fee, 10) : Math.round(eventData.fee);
       }
       
       // Gestisce contact_responsible 
