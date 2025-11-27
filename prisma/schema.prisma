@@ -78,21 +78,23 @@ model UserGroup {
 }
 
 model Event {
-  id          String      @id @default(cuid())
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  location    String?
-  status      EventStatus @default(PENDING)
-  userId      String
-  groupId     String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                   String      @id @default(cuid())
+  title                String
+  description          String?
+  startTime            DateTime
+  endTime              DateTime
+  location             String?
+  status               EventStatus @default(PENDING)
+  userId               String
+  groupId              String?
+  fee                  Float?      // Cachet dell'evento
+  contact_responsible  String?     // Contatto responsabile dell'evento
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
   // Relazioni
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group       Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group                Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   @@map("events")
 }

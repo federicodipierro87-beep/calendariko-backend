@@ -77,7 +77,9 @@ export class EventController {
         end_time,
         venue_name,
         group_id,
-        notes
+        notes,
+        fee,
+        contact_responsible
       } = req.body;
       
       // Normalizza i dati per il database Prisma
@@ -125,6 +127,8 @@ export class EventController {
           endTime: eventEndTime,
           location: eventLocation,
           groupId: eventGroupId,
+          fee: fee ? (typeof fee === 'string' ? parseFloat(fee) : fee) : null,
+          contact_responsible: contact_responsible || null,
           userId: req.user!.id
         },
         include: {
@@ -193,8 +197,18 @@ export class EventController {
       
       if (eventData.title) updateData.title = eventData.title;
       if (eventData.description) updateData.description = eventData.description;
-      if (eventData.location) updateData.location = eventData.location;
-      if (eventData.groupId) updateData.groupId = eventData.groupId;
+      if (eventData.location || eventData.venue_name) updateData.location = eventData.location || eventData.venue_name;
+      if (eventData.groupId || eventData.group_id) updateData.groupId = eventData.groupId || eventData.group_id;
+      
+      // Gestisce fee (cachet) - può essere 0 quindi controllo !== undefined
+      if (eventData.fee !== undefined) {
+        updateData.fee = typeof eventData.fee === 'string' ? parseFloat(eventData.fee) : eventData.fee;
+      }
+      
+      // Gestisce contact_responsible 
+      if (eventData.contact_responsible !== undefined) {
+        updateData.contact_responsible = eventData.contact_responsible;
+      }
       
       // Gestisce i timestamp combinando data e ora se necessario
       if (eventData.startTime) {
