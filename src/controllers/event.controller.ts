@@ -172,17 +172,67 @@ export class EventController {
       const { id } = req.params;
       const eventData = req.body;
       
-      // Per ora restituiamo un errore 404
-      // In futuro qui implementeremo la logica per aggiornare l'evento nel database
-      res.status(404).json({
-        success: false,
-        message: 'Evento non trovato'
+      console.log(`📝 [Railway DB] Aggiornamento evento ID: ${id}`);
+      console.log('📝 Dati ricevuti:', eventData);
+      
+      // Verifica se l'evento esiste
+      const existingEvent = await prisma.event.findUnique({
+        where: { id }
       });
-    } catch (error) {
-      console.error('Errore nell\'aggiornamento dell\'evento:', error);
+      
+      if (!existingEvent) {
+        console.log(`❌ Evento ${id} non trovato nel database`);
+        return res.status(404).json({
+          success: false,
+          message: 'Evento non trovato'
+        });
+      }
+      
+      // Normalizza i dati per l'aggiornamento (supporta sia formato nuovo che vecchio)
+      const updateData: any = {};
+      
+      if (eventData.title) updateData.title = eventData.title;
+      if (eventData.description) updateData.description = eventData.description;
+      if (eventData.location) updateData.location = eventData.location;
+      if (eventData.groupId) updateData.groupId = eventData.groupId;
+      
+      // Gestisce i timestamp combinando data e ora se necessario
+      if (eventData.startTime) {
+        updateData.startTime = new Date(eventData.startTime);
+      } else if (eventData.date && eventData.start_time) {
+        updateData.startTime = new Date(`${eventData.date}T${eventData.start_time}`);
+      }
+      
+      if (eventData.endTime) {
+        updateData.endTime = new Date(eventData.endTime);
+      } else if (eventData.date && eventData.end_time) {
+        updateData.endTime = new Date(`${eventData.date}T${eventData.end_time}`);
+      }
+      
+      console.log('📝 Dati normalizzati per aggiornamento:', updateData);
+      
+      // Aggiorna l'evento nel database
+      const updatedEvent = await prisma.event.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true }
+          },
+          group: {
+            select: { id: true, name: true, color: true }
+          }
+        }
+      });
+      
+      console.log(`✅ [Railway DB] Evento ${id} aggiornato con successo`);
+      res.status(200).json(updatedEvent);
+      
+    } catch (error: any) {
+      console.error('❌ Errore nell\'aggiornamento dell\'evento:', error);
       res.status(500).json({
         success: false,
-        message: 'Errore interno del server'
+        message: `Errore interno del server: ${error.message}`
       });
     }
   }
