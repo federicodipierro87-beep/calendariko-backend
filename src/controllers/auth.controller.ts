@@ -165,52 +165,27 @@ export class AuthController {
         <head>
           <title>Email Verificata - Calendariko</title>
           <meta charset="utf-8">
+          <meta http-equiv="refresh" content="5;url=${frontendUrl}">
           <style>
             body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
             .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
             h1 { color: #16a34a; }
             a { color: #4f46e5; text-decoration: none; font-weight: bold; }
             a:hover { text-decoration: underline; }
-          </style>
-          <script>
-            let countdown = 5;
-            const redirectUrl = '${frontendUrl}';
-            console.log('Redirect URL:', redirectUrl);
-            
-            function updateCountdown() {
-              const element = document.getElementById('countdown');
-              if (element) {
-                element.textContent = countdown;
-              }
-              console.log('Countdown:', countdown);
-              
-              if (countdown === 0) {
-                console.log('Redirecting to:', redirectUrl);
-                window.location.href = redirectUrl;
-              } else {
-                countdown--;
-                setTimeout(updateCountdown, 1000);
-              }
+            .countdown { font-weight: bold; color: #16a34a; }
+            @keyframes pulse {
+              0% { opacity: 1; }
+              50% { opacity: 0.5; }
+              100% { opacity: 1; }
             }
-            
-            // Start countdown when page loads
-            document.addEventListener('DOMContentLoaded', function() {
-              console.log('Page loaded, starting countdown');
-              updateCountdown();
-            });
-            
-            // Backup redirect in case something fails
-            setTimeout(function() {
-              console.log('Backup redirect triggered');
-              window.location.href = redirectUrl;
-            }, 6000);
-          </script>
+            .pulse { animation: pulse 1s infinite; }
+          </style>
         </head>
         <body>
           <div class="container">
             <h1>✅ Email Verificata!</h1>
             <p>La tua email è stata verificata con successo!</p>
-            <p>Verrai reindirizzato al login tra <span id="countdown">5</span> secondi...</p>
+            <p class="pulse">Verrai reindirizzato al login tra <span class="countdown">5</span> secondi...</p>
             <p><a href="${frontendUrl}">Vai subito al Login</a></p>
           </div>
         </body>
