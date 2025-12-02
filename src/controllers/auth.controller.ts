@@ -13,8 +13,8 @@ export class AuthController {
 
       const result = await AuthService.login(email, password);
 
-      // Verifica se l'email è stata confermata
-      if (!result.user.emailVerified) {
+      // Verifica se l'email è stata confermata (gli admin bypassano la verifica)
+      if (!result.user.emailVerified && result.user.role !== 'ADMIN') {
         return res.status(400).json({ 
           error: 'Email non verificata. Controlla la tua casella di posta e clicca sul link di verifica.',
           code: 'EMAIL_NOT_VERIFIED'
