@@ -235,9 +235,6 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
               <p><strong>⏰ Importante:</strong> Questo link di verifica scade tra 24 ore. Se non verifichi entro questo tempo, dovrai richiedere un nuovo link.</p>
             </div>
             
-            <p><strong>Se il pulsante non funziona, copia e incolla questo link nel tuo browser:</strong></p>
-            <div class="url-box">${verificationUrl}</div>
-            
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             
             <p style="font-size: 14px; color: #6b7280;">
