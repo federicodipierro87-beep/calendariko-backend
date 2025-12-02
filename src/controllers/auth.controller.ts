@@ -158,69 +158,44 @@ export class AuthController {
 
       const result = await AuthService.verifyEmail(token);
       
-      if (result.success) {
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Email Verificata - Calendariko</title>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
-              .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              h1 { color: #16a34a; }
-              a { color: #4f46e5; text-decoration: none; font-weight: bold; }
-              a:hover { text-decoration: underline; }
-            </style>
-            <script>
-              let countdown = 5;
-              function updateCountdown() {
-                document.getElementById('countdown').textContent = countdown;
-                if (countdown === 0) {
-                  window.location.href = '${frontendUrl}';
-                } else {
-                  countdown--;
-                  setTimeout(updateCountdown, 1000);
-                }
+      // Se arriviamo qui, la verifica è andata a buon fine
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Email Verificata - Calendariko</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
+            .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #16a34a; }
+            a { color: #4f46e5; text-decoration: none; font-weight: bold; }
+            a:hover { text-decoration: underline; }
+          </style>
+          <script>
+            let countdown = 5;
+            function updateCountdown() {
+              document.getElementById('countdown').textContent = countdown;
+              if (countdown === 0) {
+                window.location.href = '${frontendUrl}';
+              } else {
+                countdown--;
+                setTimeout(updateCountdown, 1000);
               }
-              window.onload = function() { updateCountdown(); };
-            </script>
-          </head>
-          <body>
-            <div class="container">
-              <h1>✅ Email Verificata!</h1>
-              <p>La tua email è stata verificata con successo!</p>
-              <p>Verrai reindirizzato al login tra <span id="countdown">5</span> secondi...</p>
-              <p><a href="${frontendUrl}">Vai subito al Login</a></p>
-            </div>
-          </body>
-          </html>
-        `);
-      } else {
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Errore Verifica - Calendariko</title>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
-              .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              h1 { color: #dc2626; }
-              a { color: #4f46e5; text-decoration: none; font-weight: bold; }
-              a:hover { text-decoration: underline; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1>❌ Verifica Fallita</h1>
-              <p>${result.message || 'Token di verifica non valido o scaduto'}</p>
-              <a href="${frontendUrl}">Torna al Login</a>
-            </div>
-          </body>
-          </html>
-        `);
-      }
+            }
+            window.onload = function() { updateCountdown(); };
+          </script>
+        </head>
+        <body>
+          <div class="container">
+            <h1>✅ Email Verificata!</h1>
+            <p>La tua email è stata verificata con successo!</p>
+            <p>Verrai reindirizzato al login tra <span id="countdown">5</span> secondi...</p>
+            <p><a href="${frontendUrl}">Vai subito al Login</a></p>
+          </div>
+        </body>
+        </html>
+      `);
     } catch (error: any) {
       const frontendUrl = process.env.FRONTEND_URL || 'https://calendariko.netlify.app';
       console.error('❌ Errore verifica email:', error);
@@ -228,7 +203,7 @@ export class AuthController {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Errore Server - Calendariko</title>
+          <title>Errore Verifica - Calendariko</title>
           <meta charset="utf-8">
           <style>
             body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f9fafb; }
@@ -240,8 +215,8 @@ export class AuthController {
         </head>
         <body>
           <div class="container">
-            <h1>❌ Errore Server</h1>
-            <p>Errore interno del server durante la verifica email</p>
+            <h1>❌ Verifica Fallita</h1>
+            <p>${error.message || 'Token di verifica non valido o scaduto'}</p>
             <a href="${frontendUrl}">Torna al Login</a>
           </div>
         </body>
