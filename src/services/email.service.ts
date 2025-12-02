@@ -185,8 +185,8 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
   }
 
   static async sendVerificationEmail(email: string, firstName: string, verificationToken: string): Promise<void> {
-    const frontendUrl = process.env.FRONTEND_URL || 'https://calendariko.netlify.app';
-    const verificationUrl = `${frontendUrl}?token=${verificationToken}&email=${email}`;
+    const backendUrl = process.env.BACKEND_URL || 'https://calendariko-backend-production.up.railway.app';
+    const verificationUrl = `${backendUrl}/api/auth/verify/${verificationToken}`;
     
     const subject = `Conferma registrazione ${this.APP_NAME}`;
     
