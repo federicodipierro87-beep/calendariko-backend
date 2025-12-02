@@ -44,7 +44,8 @@ export class AuthService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          role: user.role
+          role: user.role,
+          emailVerified: user.emailVerified
         },
         tokens
       };
@@ -59,6 +60,9 @@ export class AuthService {
     firstName: string;
     lastName: string;
     role?: string;
+    verificationToken?: string;
+    verificationTokenExpiresAt?: Date;
+    emailVerified?: boolean;
   }) {
     try {
       console.log('📝 Registration attempt for email:', userData.email);
@@ -84,10 +88,13 @@ export class AuthService {
           passwordHash: hashedPassword,
           firstName: userData.firstName,
           lastName: userData.lastName,
-          role: userData.role as any || 'USER'
+          role: userData.role as any || 'USER',
+          emailVerified: userData.emailVerified || false,
+          verificationToken: userData.verificationToken,
+          verificationTokenExpiresAt: userData.verificationTokenExpiresAt
         }
       });
-      console.log('✅ User created successfully:', user.email, 'with role:', user.role);
+      console.log('✅ User created successfully:', user.email, 'with role:', user.role, 'emailVerified:', user.emailVerified);
 
       const tokens = generateTokens({
         id: user.id,
@@ -104,7 +111,8 @@ export class AuthService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          role: user.role
+          role: user.role,
+          emailVerified: user.emailVerified
         },
         tokens
       };
@@ -139,6 +147,95 @@ export class AuthService {
       });
 
       return tokens;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async verifyEmail(token: string) {
+    try {
+      console.log('📧 Email verification attempt for token:', token);
+      
+      const user = await prisma.user.findFirst({
+        where: {
+          verificationToken: token,
+          emailVerified: false
+        }
+      });
+
+      console.log('👤 User found for verification:', user ? 'Yes' : 'No');
+      
+      if (!user) {
+        console.log('❌ Invalid or already used token:', token);
+        throw new Error('Token di verifica non valido o già utilizzato');
+      }
+
+      // Controlla se il token è scaduto
+      if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt < new Date()) {
+        console.log('⏰ Token expired for user:', user.email);
+        throw new Error('Il token di verifica è scaduto');
+      }
+
+      console.log('✅ Verifying email for user:', user.email);
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          verificationToken: null,
+          verificationTokenExpiresAt: null
+        }
+      });
+
+      console.log('✅ Email verified successfully for:', updatedUser.email);
+
+      return {
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          emailVerified: updatedUser.emailVerified
+        }
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async updateVerificationToken(email: string, token: string, expiresAt: Date) {
+    try {
+      console.log('🔄 Updating verification token for email:', email);
+      
+      const user = await prisma.user.findUnique({
+        where: { email, emailVerified: false }
+      });
+
+      if (!user) {
+        console.log('❌ User not found or already verified:', email);
+        throw new Error('Utente non trovato o già verificato');
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken: token,
+          verificationTokenExpiresAt: expiresAt
+        }
+      });
+
+      console.log('✅ Verification token updated for:', updatedUser.email);
+
+      return {
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          emailVerified: updatedUser.emailVerified
+        }
+      };
     } catch (error) {
       throw error;
     }

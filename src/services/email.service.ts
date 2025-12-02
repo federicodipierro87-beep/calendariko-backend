@@ -184,6 +184,104 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
     });
   }
 
+  static async sendVerificationEmail(email: string, firstName: string, verificationToken: string): Promise<void> {
+    const frontendUrl = process.env.FRONTEND_URL || 'https://calendariko.netlify.app';
+    const verificationUrl = `${frontendUrl}?token=${verificationToken}&email=${email}`;
+    
+    const subject = `📧 Verifica il tuo account ${this.APP_NAME}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #2563EB; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+          .content { background: #f8fafc; padding: 20px; border-radius: 0 0 8px 8px; }
+          .verification-box { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #2563EB; }
+          .verify-button { background-color: #2563EB; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin: 20px 0; }
+          .verify-button:hover { background-color: #1d4ed8; }
+          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px; }
+          .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0; }
+          .url-box { background: #f3f4f6; border-radius: 6px; padding: 10px; margin: 15px 0; word-break: break-all; font-size: 12px; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎵 Benvenuto su ${this.APP_NAME}!</h1>
+            <p>Verifica il tuo account per iniziare</p>
+          </div>
+          
+          <div class="content">
+            <div class="verification-box">
+              <h2>Ciao ${firstName}! 👋</h2>
+              
+              <p><strong>Grazie per esserti registrato su Calendariko!</strong></p>
+              <p>Per completare la registrazione e accedere alla piattaforma di gestione eventi per band e DJ, devi verificare il tuo indirizzo email.</p>
+              
+              <div style="text-align: center;">
+                <a href="${verificationUrl}" class="verify-button">
+                  ✅ Verifica Email
+                </a>
+              </div>
+              
+              <p>Dopo la verifica, un amministratore ti assegnerà al gruppo appropriato e potrai iniziare a utilizzare tutte le funzionalità della piattaforma.</p>
+            </div>
+            
+            <div class="warning">
+              <p><strong>⏰ Importante:</strong> Questo link di verifica scade tra 24 ore. Se non verifichi entro questo tempo, dovrai richiedere un nuovo link.</p>
+            </div>
+            
+            <p><strong>Se il pulsante non funziona, copia e incolla questo link nel tuo browser:</strong></p>
+            <div class="url-box">${verificationUrl}</div>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <p style="font-size: 14px; color: #6b7280;">
+              Se non hai richiesto questa registrazione, puoi ignorare questa email in sicurezza.
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p>© 2024 ${this.APP_NAME} - Gestione Eventi per Musicisti</p>
+            <p>Questa email è stata inviata automaticamente dal sistema</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+🎵 Benvenuto su ${this.APP_NAME}!
+
+Ciao ${firstName}!
+
+Grazie per esserti registrato su Calendariko, la piattaforma di gestione eventi per band e DJ!
+
+Per completare la registrazione, devi verificare il tuo indirizzo email cliccando sul link qui sotto:
+
+${verificationUrl}
+
+⏰ IMPORTANTE: Questo link scade tra 24 ore.
+
+Dopo la verifica, un amministratore ti assegnerà al gruppo appropriato e potrai iniziare a utilizzare tutte le funzionalità della piattaforma.
+
+Se non hai richiesto questa registrazione, puoi ignorare questa email.
+
+© 2024 ${this.APP_NAME} - Gestione Eventi per Musicisti
+    `;
+
+    await this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text
+    });
+  }
+
   static async sendWelcomeEmail(email: string, firstName: string): Promise<void> {
     const subject = `Benvenuto in ${this.APP_NAME}! 🎵`;
     
