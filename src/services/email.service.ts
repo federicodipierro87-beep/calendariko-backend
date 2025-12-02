@@ -188,7 +188,7 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
     const frontendUrl = process.env.FRONTEND_URL || 'https://calendariko.netlify.app';
     const verificationUrl = `${frontendUrl}?token=${verificationToken}&email=${email}`;
     
-    const subject = `📧 Verifica il tuo account ${this.APP_NAME}`;
+    const subject = `Conferma registrazione ${this.APP_NAME}`;
     
     const html = `
       <!DOCTYPE html>
@@ -198,48 +198,38 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #2563EB; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-          .content { background: #f8fafc; padding: 20px; border-radius: 0 0 8px 8px; }
-          .verification-box { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #2563EB; }
-          .verify-button { background-color: #2563EB; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin: 20px 0; }
-          .verify-button:hover { background-color: #1d4ed8; }
+          .header { background: #4f46e5; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+          .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+          .verification-box { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #4f46e5; }
+          .verify-link { color: #4f46e5; text-decoration: underline; font-weight: bold; }
           .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px; }
-          .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0; }
-          .url-box { background: #f3f4f6; border-radius: 6px; padding: 10px; margin: 15px 0; word-break: break-all; font-size: 12px; color: #6b7280; }
+          .note { background: #f3f4f6; border-radius: 6px; padding: 15px; margin: 20px 0; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎵 Benvenuto su ${this.APP_NAME}!</h1>
-            <p>Verifica il tuo account per iniziare</p>
+            <h1>🎵 ${this.APP_NAME}</h1>
+            <p>Conferma la tua registrazione</p>
           </div>
           
           <div class="content">
             <div class="verification-box">
-              <h2>Ciao ${firstName}! 👋</h2>
+              <h2>Ciao ${firstName},</h2>
               
-              <p><strong>Grazie per esserti registrato su Calendariko!</strong></p>
-              <p>Per completare la registrazione e accedere alla piattaforma di gestione eventi per band e DJ, devi verificare il tuo indirizzo email.</p>
+              <p>Grazie per esserti registrato su Calendariko, la piattaforma di gestione eventi per band e DJ.</p>
               
-              <div style="text-align: center;">
-                <a href="${verificationUrl}" class="verify-button">
-                  ✅ Verifica Email
-                </a>
-              </div>
+              <p>Per completare la registrazione, clicca sul seguente link:</p>
               
-              <p>Dopo la verifica, un amministratore ti assegnerà al gruppo appropriato e potrai iniziare a utilizzare tutte le funzionalità della piattaforma.</p>
+              <p><a href="${verificationUrl}" class="verify-link">Conferma registrazione</a></p>
+              
+              <p>Dopo la conferma, un amministratore ti assegnerà al gruppo appropriato.</p>
             </div>
             
-            <div class="warning">
-              <p><strong>⏰ Importante:</strong> Questo link di verifica scade tra 24 ore. Se non verifichi entro questo tempo, dovrai richiedere un nuovo link.</p>
+            <div class="note">
+              <p><strong>Nota:</strong> Questo link scade tra 24 ore.</p>
+              <p>Se non hai richiesto questa registrazione, ignora questa email.</p>
             </div>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            
-            <p style="font-size: 14px; color: #6b7280;">
-              Se non hai richiesto questa registrazione, puoi ignorare questa email in sicurezza.
-            </p>
           </div>
           
           <div class="footer">
@@ -252,21 +242,19 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
     `;
 
     const text = `
-🎵 Benvenuto su ${this.APP_NAME}!
+${this.APP_NAME} - Conferma registrazione
 
-Ciao ${firstName}!
+Ciao ${firstName},
 
-Grazie per esserti registrato su Calendariko, la piattaforma di gestione eventi per band e DJ!
+Grazie per esserti registrato su Calendariko, la piattaforma di gestione eventi per band e DJ.
 
-Per completare la registrazione, devi verificare il tuo indirizzo email cliccando sul link qui sotto:
-
+Per completare la registrazione, clicca sul seguente link:
 ${verificationUrl}
 
-⏰ IMPORTANTE: Questo link scade tra 24 ore.
+Dopo la conferma, un amministratore ti assegnerà al gruppo appropriato.
 
-Dopo la verifica, un amministratore ti assegnerà al gruppo appropriato e potrai iniziare a utilizzare tutte le funzionalità della piattaforma.
-
-Se non hai richiesto questa registrazione, puoi ignorare questa email.
+Nota: Questo link scade tra 24 ore.
+Se non hai richiesto questa registrazione, ignora questa email.
 
 © 2024 ${this.APP_NAME} - Gestione Eventi per Musicisti
     `;
