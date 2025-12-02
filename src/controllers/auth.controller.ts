@@ -174,16 +174,36 @@ export class AuthController {
           </style>
           <script>
             let countdown = 5;
+            const redirectUrl = '${frontendUrl}';
+            console.log('Redirect URL:', redirectUrl);
+            
             function updateCountdown() {
-              document.getElementById('countdown').textContent = countdown;
+              const element = document.getElementById('countdown');
+              if (element) {
+                element.textContent = countdown;
+              }
+              console.log('Countdown:', countdown);
+              
               if (countdown === 0) {
-                window.location.href = '${frontendUrl}';
+                console.log('Redirecting to:', redirectUrl);
+                window.location.href = redirectUrl;
               } else {
                 countdown--;
                 setTimeout(updateCountdown, 1000);
               }
             }
-            window.onload = function() { updateCountdown(); };
+            
+            // Start countdown when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+              console.log('Page loaded, starting countdown');
+              updateCountdown();
+            });
+            
+            // Backup redirect in case something fails
+            setTimeout(function() {
+              console.log('Backup redirect triggered');
+              window.location.href = redirectUrl;
+            }, 6000);
           </script>
         </head>
         <body>
