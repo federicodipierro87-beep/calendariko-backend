@@ -98,7 +98,7 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
   };
 
   // Override di res.end in modo più sicuro
-  res.end = function (chunk?: any, encoding?: any, cb?: any) {
+  res.end = function (...args: any[]) {
     // Log dell'audit in modo asincrono dopo che la risposta è completa
     process.nextTick(async () => {
       try {
@@ -129,16 +129,8 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
       }
     });
 
-    // Chiama la funzione originale con i parametri corretti
-    if (cb && typeof cb === 'function') {
-      return originalEnd.call(this, chunk, encoding, cb);
-    } else if (encoding) {
-      return originalEnd.call(this, chunk, encoding);
-    } else if (chunk) {
-      return originalEnd.call(this, chunk);
-    } else {
-      return originalEnd.call(this);
-    }
+    // Chiama la funzione originale usando apply
+    return (originalEnd as any).apply(this, args);
   };
 
   next();
