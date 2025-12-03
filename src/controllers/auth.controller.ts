@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { EmailService } from '../services/email.service';
+import { resetEmailAttempts } from '../middleware/rateLimiter';
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -29,6 +30,9 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
+      // Reset rate limiting per questa email dopo login di successo
+      resetEmailAttempts(email);
+      
       res.json({
         success: true,
         user: result.user,

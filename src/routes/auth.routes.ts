@@ -1,9 +1,16 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
+import { loginRateLimiter, strictLoginRateLimiter, emailRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
-router.post('/login', AuthController.login);
+// Login con rate limiting a più livelli
+router.post('/login', 
+  loginRateLimiter,           // Rate limit generale per IP
+  strictLoginRateLimiter,     // Rate limit per fallimenti
+  emailRateLimiter,           // Rate limit per email specifica
+  AuthController.login
+);
 router.post('/logout', AuthController.logout);
 router.post('/refresh', AuthController.refresh);
 router.post('/register', AuthController.register);
