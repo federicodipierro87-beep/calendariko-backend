@@ -11,7 +11,8 @@ router.use(authenticateToken);
 router.get('/logs', AuditController.getAuditLogs);
 
 // Get attività di un admin specifico
-router.get('/activity/:adminId?', AuditController.getAdminActivity);
+router.get('/activity/:adminId', AuditController.getAdminActivity);
+router.get('/activity', AuditController.getAdminActivity);
 
 // Get statistiche audit
 router.get('/stats', AuditController.getAuditStats);
