@@ -1,14 +1,27 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Funzione per verificare se le credenziali sono di un admin valido
 const isValidAdmin = async (email: string, password: string): Promise<boolean> => {
   try {
-    // Importa AuthService solo quando necessario per evitare dipendenze circolari
-    const { AuthService } = await import('../services/auth.service');
-    const result = await AuthService.login(email, password);
-    return result.user.role === 'ADMIN';
+    // Verifica direttamente nel database senza usare AuthService
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user || user.role !== 'ADMIN') {
+      return false;
+    }
+
+    // Verifica la password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    return isValidPassword;
   } catch (error) {
+    console.error('Error validating admin credentials:', error);
     return false;
   }
 };
