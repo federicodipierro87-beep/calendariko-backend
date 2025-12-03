@@ -18,7 +18,7 @@ const isValidAdmin = async (email: string, password: string): Promise<boolean> =
     }
 
     // Verifica la password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     return isValidPassword;
   } catch (error) {
     console.error('Error validating admin credentials:', error);
