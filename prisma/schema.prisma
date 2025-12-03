@@ -45,6 +45,7 @@ model User {
   availabilities      Availability[]
   notifications       Notification[]
   createdGroups       Group[]         @relation("GroupCreator")
+  auditLogs           AuditLog[]
 
   @@map("users")
 }
@@ -133,4 +134,24 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  action      String    // es: CREATE_USER, UPDATE_USER, DELETE_USER, CREATE_GROUP, etc.
+  entity      String    // es: USER, GROUP, EVENT, AVAILABILITY
+  entityId    String?   // ID dell'entità modificata
+  adminId     String    // ID dell'admin che ha eseguito l'azione
+  admin       User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  details     Json?     // Dettagli dell'azione (prima/dopo, parametri, etc.)
+  ipAddress   String?   // IP da cui è stata eseguita l'azione
+  userAgent   String?   // User agent del browser
+  success     Boolean   @default(true)  // Se l'azione è stata completata con successo
+  errorMessage String?  // Messaggio di errore se success = false
+  createdAt   DateTime  @default(now())
+  
+  @@index([adminId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
 }

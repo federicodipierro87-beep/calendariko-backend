@@ -54,6 +54,7 @@ import groupRoutes from './routes/group.routes';
 import userRoutes from './routes/user.routes';
 import availabilityRoutes from './routes/availability.routes';
 import notificationRoutes from './routes/notification.routes';
+import auditRoutes from './routes/audit.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -86,6 +87,9 @@ app.use('/api/availability', availabilityRoutes);
 
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
+
+// Audit routes
+app.use('/api/audit', auditRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

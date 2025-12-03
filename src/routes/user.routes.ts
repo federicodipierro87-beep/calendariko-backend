@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user.controller';
 import { authenticateToken } from '../middleware/auth';
+import { auditMiddleware } from '../middleware/auditMiddleware';
 
 const router = Router();
 
 // Applica il middleware di autenticazione a tutte le rotte
 router.use(authenticateToken);
+router.use(auditMiddleware); // Log audit per azioni admin
 
 // Rotte per gli utenti
 router.get('/without-group', UserController.getUsersWithoutGroup); // Deve essere prima di /:id
