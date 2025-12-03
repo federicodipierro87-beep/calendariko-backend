@@ -18,11 +18,12 @@ export const loginRateLimiter = rateLimit({
       code: 'RATE_LIMIT_EXCEEDED'
     });
   },
-  skip: (req: Request) => {
+  skip: (req: Request): boolean => {
     // Skip rate limiting per IP locali in sviluppo
     if (process.env.NODE_ENV === 'development') {
       const ip = req.ip || req.socket.remoteAddress;
-      return ip === '127.0.0.1' || ip === '::1' || ip?.includes('localhost');
+      if (!ip) return false;
+      return ip === '127.0.0.1' || ip === '::1' || ip.includes('localhost');
     }
     return false;
   }
