@@ -126,16 +126,27 @@ export class UserController {
   static async updateUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { firstName, lastName, email, role } = req.body;
+      const { firstName, lastName, email, role, password } = req.body;
+      
+      // Prepara i dati per l'update
+      const updateData: any = {
+        firstName,
+        lastName,
+        email,
+        role
+      };
+      
+      // Se è stata fornita una nuova password, hashala e includila nell'update
+      if (password) {
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        updateData.passwordHash = hashedPassword;
+        console.log('🔐 Password dell\'utente aggiornata');
+      }
       
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: {
-          firstName,
-          lastName,
-          email,
-          role
-        },
+        data: updateData,
         select: {
           id: true,
           email: true,
