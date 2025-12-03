@@ -1,6 +1,18 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 
+// Funzione per verificare se le credenziali sono di un admin valido
+const isValidAdmin = async (email: string, password: string): Promise<boolean> => {
+  try {
+    // Importa AuthService solo quando necessario per evitare dipendenze circolari
+    const { AuthService } = await import('../services/auth.service');
+    const result = await AuthService.login(email, password);
+    return result.user.role === 'ADMIN';
+  } catch (error) {
+    return false;
+  }
+};
+
 // Rate limiter generale per tutte le richieste di login
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minuti
@@ -18,13 +30,23 @@ export const loginRateLimiter = rateLimit({
       code: 'RATE_LIMIT_EXCEEDED'
     });
   },
-  skip: (req: Request): boolean => {
+  skip: async (req: Request): Promise<boolean> => {
     // Skip rate limiting per IP locali in sviluppo
     if (process.env.NODE_ENV === 'development') {
       const ip = req.ip || req.socket.remoteAddress;
       if (!ip) return false;
-      return ip === '127.0.0.1' || ip === '::1' || ip.includes('localhost');
+      if (ip === '127.0.0.1' || ip === '::1' || ip.includes('localhost')) {
+        return true;
+      }
     }
+    
+    // Skip rate limiting per admin validi
+    const { email, password } = req.body;
+    if (email && password && await isValidAdmin(email, password)) {
+      console.log('🔓 Admin detected - skipping IP rate limit');
+      return true;
+    }
+    
     return false;
   }
 });
@@ -44,6 +66,16 @@ export const strictLoginRateLimiter = rateLimit({
       error: 'Account temporaneamente bloccato per troppi tentativi di accesso falliti. Riprova tra 1 ora.',
       code: 'ACCOUNT_TEMPORARILY_BLOCKED'
     });
+  },
+  skip: async (req: Request): Promise<boolean> => {
+    // Skip rate limiting per admin validi
+    const { email, password } = req.body;
+    if (email && password && await isValidAdmin(email, password)) {
+      console.log('🔓 Admin detected - skipping strict rate limit');
+      return true;
+    }
+    
+    return false;
   }
 });
 
@@ -62,11 +94,17 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-// Middleware per rate limiting per email
-export const emailRateLimiter = (req: Request, res: Response, next: Function) => {
-  const { email } = req.body;
+// Middleware per rate limiting per email con bypass per admin
+export const emailRateLimiter = async (req: Request, res: Response, next: Function) => {
+  const { email, password } = req.body;
   
   if (!email) {
+    return next();
+  }
+
+  // Verifica se è un admin valido prima di applicare il rate limiting
+  if (password && await isValidAdmin(email, password)) {
+    console.log('🔓 Admin login detected - bypassing rate limit for:', email);
     return next();
   }
 
