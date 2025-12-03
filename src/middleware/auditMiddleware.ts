@@ -70,11 +70,20 @@ const getEntityIdFromRequest = (path: string, body: any, params: any): string | 
   if (body?.groupId) return body.groupId;
   if (body?.eventId) return body.eventId;
   
-  // Estrae l'ID dal path usando regex
-  const idMatch = path.match(/\/([a-zA-Z0-9_-]+)(?:\/|$)/g);
-  if (idMatch && idMatch.length > 1) {
-    const lastSegment = idMatch[idMatch.length - 1].replace(/\//g, '');
-    if (lastSegment.length > 10) return lastSegment; // Probabilmente un ID
+  // Estrae l'ID dal path usando regex migliorato
+  // Cerca pattern come /users/clj123abc o /groups/clj123abc/members
+  const segments = path.split('/').filter(segment => segment.length > 0);
+  
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    // Controlla se il segmento assomiglia a un ID (inizia con 'cl' ed è lungo almeno 8 caratteri)
+    if (segment.match(/^cl[a-zA-Z0-9_-]{6,}$/)) {
+      return segment;
+    }
+    // Controlla anche ID che potrebbero essere UUID o simili (almeno 10 caratteri alfanumerici)
+    if (segment.match(/^[a-zA-Z0-9_-]{10,}$/) && !['users', 'groups', 'events', 'admin', 'auth', 'notifications', 'availability'].includes(segment)) {
+      return segment;
+    }
   }
   
   return undefined;
