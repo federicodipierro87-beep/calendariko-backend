@@ -50,10 +50,10 @@ export class SchedulerService {
         // Invia notifica di errore se configurato
         await this.sendBackupNotification('error', undefined, error.message);
       }
-    }, {
-      scheduled: true,
-      timezone: process.env.TZ || 'Europe/Rome'
     });
+
+    // Avvia il task
+    this.backupTask.start();
 
     console.log(`✅ Backup automatici programmati: ${schedule}`);
   }
@@ -88,36 +88,41 @@ export class SchedulerService {
       if (!notificationEmail) return;
 
       // Importa il servizio email dinamicamente per evitare circular dependencies
-      const { EmailService } = await import('./email.service');
-      
-      if (type === 'success' && backup) {
-        await EmailService.sendEmail({
-          to: notificationEmail,
-          subject: '✅ Backup Database Completato - Calendariko',
-          html: `
-            <h2>Backup Database Completato</h2>
-            <p>Il backup automatico del database è stato completato con successo.</p>
-            <ul>
-              <li><strong>File:</strong> ${backup.filename}</li>
-              <li><strong>Dimensione:</strong> ${(backup.size / 1024 / 1024).toFixed(2)} MB</li>
-              <li><strong>Data:</strong> ${backup.createdAt.toLocaleString('it-IT')}</li>
-            </ul>
-            <p><em>Sistema Calendariko - Backup Automatico</em></p>
-          `
-        });
-      } else if (type === 'error') {
-        await EmailService.sendEmail({
-          to: notificationEmail,
-          subject: '❌ Errore Backup Database - Calendariko',
-          html: `
-            <h2>Errore nel Backup Database</h2>
-            <p>Si è verificato un errore durante il backup automatico del database.</p>
-            <p><strong>Errore:</strong> ${error}</p>
-            <p><strong>Data:</strong> ${new Date().toLocaleString('it-IT')}</p>
-            <p>Si consiglia di verificare la configurazione del sistema e riprovare manualmente.</p>
-            <p><em>Sistema Calendariko - Backup Automatico</em></p>
-          `
-        });
+      try {
+        const emailService = require('./email.service');
+        
+        if (type === 'success' && backup) {
+          await emailService.EmailService.sendEmail({
+            to: notificationEmail,
+            subject: '✅ Backup Database Completato - Calendariko',
+            html: `
+              <h2>Backup Database Completato</h2>
+              <p>Il backup automatico del database è stato completato con successo.</p>
+              <ul>
+                <li><strong>File:</strong> ${backup.filename}</li>
+                <li><strong>Dimensione:</strong> ${(backup.size / 1024 / 1024).toFixed(2)} MB</li>
+                <li><strong>Data:</strong> ${backup.createdAt.toLocaleString('it-IT')}</li>
+              </ul>
+              <p><em>Sistema Calendariko - Backup Automatico</em></p>
+            `
+          });
+        } else if (type === 'error') {
+          await emailService.EmailService.sendEmail({
+            to: notificationEmail,
+            subject: '❌ Errore Backup Database - Calendariko',
+            html: `
+              <h2>Errore nel Backup Database</h2>
+              <p>Si è verificato un errore durante il backup automatico del database.</p>
+              <p><strong>Errore:</strong> ${error}</p>
+              <p><strong>Data:</strong> ${new Date().toLocaleString('it-IT')}</p>
+              <p>Si consiglia di verificare la configurazione del sistema e riprovare manualmente.</p>
+              <p><em>Sistema Calendariko - Backup Automatico</em></p>
+            `
+          });
+        }
+      } catch (importError) {
+        console.warn('EmailService non disponibile, notifica email saltata:', importError);
+        return;
       }
     } catch (notificationError) {
       console.error('Errore invio notifica backup:', notificationError);
@@ -138,11 +143,9 @@ export class SchedulerService {
     let nextRun: Date | undefined;
     if (this.backupTask && enabled) {
       try {
-        // Calcola la prossima esecuzione
-        const nextDate = this.backupTask.nextDate();
-        if (nextDate) {
-          nextRun = nextDate.toDate();
-        }
+        // Per node-cron v4+, non è disponibile nextDate()
+        // Lasciamo undefined per ora
+        nextRun = undefined;
       } catch (error) {
         console.warn('Errore calcolo prossima esecuzione:', error);
       }

@@ -78,7 +78,7 @@ export class GroupController {
         // Trasforma i dati per compatibilità frontend
         const groupWithUserGroups = {
           ...group,
-          user_groups: group.members.map(member => ({
+          user_groups: group.members.map((member: any) => ({
             user_id: member.user.id,
             group_id: group.id,
             user: {
@@ -212,7 +212,7 @@ export class GroupController {
       // Trasforma i dati per compatibilità frontend
       const groupWithUserGroups = {
         ...updatedGroup,
-        user_groups: updatedGroup.members.map(member => ({
+        user_groups: updatedGroup.members.map((member: any) => ({
           user_id: member.user.id,
           group_id: updatedGroup.id,
           user: {
@@ -472,7 +472,7 @@ export class GroupController {
           }
         });
 
-        const membersList = members.map(m => m.user);
+        const membersList = members.map((m: any) => m.user);
         console.log(`✅ Retrieved ${membersList.length} members for group ${groupId}`);
         res.json(membersList);
 

@@ -106,26 +106,26 @@ export class AuditController {
       // Calcola statistiche
       const stats = {
         totalActions: logs.length,
-        actionsByType: logs.reduce((acc: any, log) => {
+        actionsByType: logs.reduce((acc: any, log: any) => {
           acc[log.action] = (acc[log.action] || 0) + 1;
           return acc;
         }, {}),
-        actionsByEntity: logs.reduce((acc: any, log) => {
+        actionsByEntity: logs.reduce((acc: any, log: any) => {
           acc[log.entity] = (acc[log.entity] || 0) + 1;
           return acc;
         }, {}),
-        actionsByAdmin: logs.reduce((acc: any, log) => {
+        actionsByAdmin: logs.reduce((acc: any, log: any) => {
           const adminName = `${log.admin.firstName} ${log.admin.lastName}`;
           acc[adminName] = (acc[adminName] || 0) + 1;
           return acc;
         }, {}),
-        actionsPerDay: logs.reduce((acc: any, log) => {
+        actionsPerDay: logs.reduce((acc: any, log: any) => {
           const day = log.createdAt.toISOString().split('T')[0];
           acc[day] = (acc[day] || 0) + 1;
           return acc;
         }, {}),
         successRate: logs.length > 0 
-          ? (logs.filter(log => log.success).length / logs.length) * 100 
+          ? (logs.filter((log: any) => log.success).length / logs.length) * 100 
           : 100,
       };
 

@@ -121,7 +121,7 @@ export class AuditService {
       });
 
       // Raggruppa per azione
-      const actionCounts = logs.reduce((acc: any, log) => {
+      const actionCounts = logs.reduce((acc: any, log: any) => {
         acc[log.action] = (acc[log.action] || 0) + 1;
         return acc;
       }, {});
