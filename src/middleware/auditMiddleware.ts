@@ -86,27 +86,21 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
     return next();
   }
 
-  // Salva i dati originali per il confronto
-  const originalSend = res.send;
+  // Hook per catturare la fine della risposta
+  const originalEnd = res.end;
+  let responseData: any;
+
+  // Override semplice di res.json per catturare i dati
   const originalJson = res.json;
-  let responseBody: any;
-
-  // Intercetta la risposta
-  res.send = function (body: any) {
-    responseBody = body;
-    return originalSend.call(this, body);
-  };
-
   res.json = function (body: any) {
-    responseBody = body;
+    responseData = body;
     return originalJson.call(this, body);
   };
 
-  // Esegui l'operazione
-  const originalEnd = res.end;
-  res.end = function (...args: any[]) {
-    // Log dell'audit dopo che l'operazione è completata
-    setImmediate(async () => {
+  // Override di res.end in modo più sicuro
+  res.end = function (chunk?: any, encoding?: any, cb?: any) {
+    // Log dell'audit in modo asincrono dopo che la risposta è completa
+    process.nextTick(async () => {
       try {
         const action = getActionFromRequest(req.method, req.path);
         const entity = getEntityFromRequest(req.path);
@@ -123,10 +117,10 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
             path: req.path,
             requestBody: req.body,
             responseStatus: res.statusCode,
-            ...(success && responseBody ? { responseData: responseBody } : {}),
+            ...(success && responseData ? { responseData } : {}),
           },
           success,
-          errorMessage: !success ? JSON.stringify(responseBody) : undefined,
+          errorMessage: !success && responseData ? JSON.stringify(responseData) : undefined,
         };
 
         await AuditService.logAction(auditData, req);
@@ -135,7 +129,16 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
       }
     });
 
-    return originalEnd.apply(this, args);
+    // Chiama la funzione originale con i parametri corretti
+    if (cb && typeof cb === 'function') {
+      return originalEnd.call(this, chunk, encoding, cb);
+    } else if (encoding) {
+      return originalEnd.call(this, chunk, encoding);
+    } else if (chunk) {
+      return originalEnd.call(this, chunk);
+    } else {
+      return originalEnd.call(this);
+    }
   };
 
   next();
