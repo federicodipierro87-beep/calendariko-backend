@@ -104,7 +104,7 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
 
   // Esegui l'operazione
   const originalEnd = res.end;
-  res.end = function (chunk?: any, encoding?: BufferEncoding) {
+  res.end = function (...args: any[]) {
     // Log dell'audit dopo che l'operazione è completata
     setImmediate(async () => {
       try {
@@ -135,7 +135,7 @@ export const auditMiddleware = (req: AuthenticatedRequest, res: Response, next: 
       }
     });
 
-    return originalEnd.call(this, chunk, encoding);
+    return originalEnd.apply(this, args);
   };
 
   next();
