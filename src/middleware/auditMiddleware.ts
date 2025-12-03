@@ -52,6 +52,7 @@ const getEntityFromRequest = (path: string): string => {
   if (normalizedPath.includes('/availability')) return 'AVAILABILITY';
   if (normalizedPath.includes('/notifications')) return 'NOTIFICATION';
   if (normalizedPath.includes('/admin')) return 'SYSTEM';
+  if (normalizedPath.includes('/backup')) return 'SYSTEM';
   
   return 'UNKNOWN';
 };

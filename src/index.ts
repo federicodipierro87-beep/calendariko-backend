@@ -9,6 +9,9 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+// Import services
+import { SchedulerService } from './services/scheduler.service';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -55,6 +58,7 @@ import userRoutes from './routes/user.routes';
 import availabilityRoutes from './routes/availability.routes';
 import notificationRoutes from './routes/notification.routes';
 import auditRoutes from './routes/audit.routes';
+import backupRoutes from './routes/backup.routes';
 
 // API routes
 app.get('/api', (req, res) => {
@@ -91,6 +95,9 @@ app.use('/api/notifications', notificationRoutes);
 // Audit routes
 app.use('/api/audit', auditRoutes);
 
+// Backup routes
+app.use('/api/backup', backupRoutes);
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
@@ -106,4 +113,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Avvia il servizio di scheduling
+  SchedulerService.start();
 });
