@@ -200,4 +200,72 @@ export class UserController {
       });
     }
   }
+
+  static async changePassword(req: Request, res: Response) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Utente non autenticato'
+        });
+      }
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password attuale e nuova password sono richieste'
+        });
+      }
+
+      // Trova l'utente
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Utente non trovato'
+        });
+      }
+
+      // Verifica la password attuale
+      const bcrypt = require('bcryptjs');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password attuale non corretta'
+        });
+      }
+
+      // Hash della nuova password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      // Aggiorna la password
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: hashedNewPassword
+        }
+      });
+
+      console.log('🔐 Password cambiata con successo per utente:', user.email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password aggiornata con successo'
+      });
+    } catch (error: any) {
+      console.error('Errore nel cambio password:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
 }
