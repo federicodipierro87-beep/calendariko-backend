@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { AuditController } from '../controllers/audit.controller';
-import { verifyToken } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
 // Tutte le routes richiedono autenticazione
-router.use(verifyToken);
+router.use(authenticateToken);
 
 // Get audit logs con filtri
 router.get('/logs', AuditController.getAuditLogs);
