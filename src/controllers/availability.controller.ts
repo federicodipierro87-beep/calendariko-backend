@@ -153,13 +153,57 @@ export class AvailabilityController {
   static async updateAvailability(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const availabilityData = req.body;
+      const { notes, type } = req.body;
+      const currentUser = (req as any).user;
       
-      // Per ora restituiamo un errore 404
-      res.status(404).json({
-        success: false,
-        message: 'Disponibilità non trovata'
+      // Verifica se la disponibilità esiste
+      const availability = await prisma.dayAvailability.findUnique({
+        where: { id },
+        include: { user: true, group: true }
       });
+      
+      if (!availability) {
+        return res.status(404).json({
+          success: false,
+          message: 'Disponibilità non trovata'
+        });
+      }
+      
+      // Verifica autorizzazioni: solo il proprietario o un admin può modificare
+      if (currentUser?.role !== 'ADMIN' && availability.userId !== currentUser?.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Non autorizzato a modificare questa disponibilità'
+        });
+      }
+      
+      // Aggiorna la disponibilità
+      const updatedAvailability = await prisma.dayAvailability.update({
+        where: { id },
+        data: {
+          ...(notes !== undefined && { notes }),
+          ...(type !== undefined && { type })
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          },
+          group: {
+            select: {
+              id: true,
+              name: true,
+              type: true
+            }
+          }
+        }
+      });
+      
+      res.status(200).json(updatedAvailability);
     } catch (error) {
       console.error('Errore nell\'aggiornamento della disponibilità:', error);
       res.status(500).json({
