@@ -156,6 +156,7 @@ export class UserController {
           firstName: true,
           lastName: true,
           role: true,
+          emailVerified: true,
           createdAt: true,
           updatedAt: true
           // Non includiamo passwordHash per sicurezza
@@ -166,6 +167,98 @@ export class UserController {
       res.status(200).json(users);
     } catch (error) {
       console.error('Errore nel recupero degli utenti:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
+
+  static async getUsersForExport(req: Request, res: Response) {
+    try {
+      const currentUser = (req as any).user;
+      
+      // Solo admin possono esportare dati completi
+      if (currentUser?.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Non autorizzato ad esportare dati utenti'
+        });
+      }
+
+      // Recupera tutti gli utenti con tutte le relazioni
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          groupMemberships: {
+            include: {
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  description: true
+                }
+              }
+            }
+          },
+          events: {
+            select: {
+              id: true,
+              title: true,
+              startTime: true,
+              endTime: true,
+              location: true,
+              status: true,
+              fee: true
+            },
+            orderBy: {
+              startTime: 'desc'
+            }
+          },
+          dayAvailabilities: {
+            select: {
+              id: true,
+              date: true,
+              type: true,
+              notes: true,
+              group: {
+                select: {
+                  name: true
+                }
+              }
+            },
+            orderBy: {
+              date: 'desc'
+            }
+          },
+          notifications: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              isRead: true,
+              createdAt: true
+            },
+            orderBy: {
+              createdAt: 'desc'
+            }
+          }
+        }
+      });
+      
+      console.log(`📊 Exporting detailed data for ${users.length} users`);
+      
+      res.status(200).json(users);
+    } catch (error) {
+      console.error('Errore nel recupero degli utenti per export:', error);
       res.status(500).json({
         success: false,
         message: 'Errore interno del server'
