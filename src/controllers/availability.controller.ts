@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { EmailService } from '../services/email.service';
 
 const prisma = new PrismaClient();
 
@@ -221,7 +222,32 @@ export class AvailabilityController {
       // Verifica se la disponibilità esiste
       const availability = await prisma.dayAvailability.findUnique({
         where: { id },
-        include: { user: true }
+        include: { 
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          },
+          group: {
+            include: {
+              members: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                      email: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
       
       if (!availability) {
@@ -239,10 +265,38 @@ export class AvailabilityController {
         });
       }
       
+      // Se un admin cancella l'indisponibilità di qualcun altro, invia email notifica
+      const isAdminDeletingOthers = currentUser?.role === 'ADMIN' && availability.userId !== currentUser?.id;
+      
       // Elimina la disponibilità
       await prisma.dayAvailability.delete({
         where: { id }
       });
+      
+      // Invia email se necessario
+      if (isAdminDeletingOthers && availability.group) {
+        try {
+          // Raccogli tutte le email dei membri del gruppo
+          const memberEmails = availability.group.members
+            .map(member => member.user.email)
+            .filter(email => email); // Rimuovi email undefined/null
+          
+          if (memberEmails.length > 0) {
+            await EmailService.sendAvailabilityDeleteNotification(
+              memberEmails,
+              availability.group.name,
+              availability.date,
+              `${currentUser.firstName} ${currentUser.lastName}`,
+              availability.notes || undefined
+            );
+            
+            console.log(`📧 Sent availability deletion notification to ${memberEmails.length} members of ${availability.group.name}`);
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending availability deletion email:', emailError);
+          // Non bloccare la risposta per errori email
+        }
+      }
       
       res.status(200).json({
         success: true,

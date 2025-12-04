@@ -594,4 +594,109 @@ Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.
       text
     });
   }
+
+  static async sendAvailabilityDeleteNotification(
+    emails: string[],
+    groupName: string,
+    date: Date,
+    adminName: string,
+    notes?: string
+  ): Promise<void> {
+    const formatDate = (date: Date): string => {
+      return date.toLocaleDateString('it-IT', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    const subject = `🗑️ Indisponibilità Rimossa: ${groupName} - ${formatDate(date)}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+          .availability-details { background: white; padding: 15px; border-radius: 6px; margin: 15px 0; }
+          .availability-title { font-size: 20px; font-weight: bold; color: #dc2626; margin-bottom: 10px; }
+          .detail-row { margin: 8px 0; }
+          .detail-label { font-weight: bold; color: #6b7280; }
+          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px; }
+          .cancel-notice { background: #fecaca; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #dc2626; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🗑️ ${this.APP_NAME}</h1>
+            <p>Indisponibilità rimossa dal calendario</p>
+          </div>
+          
+          <div class="content">
+            <div class="cancel-notice">
+              <strong>📢 NOTIFICA:</strong> Un amministratore ha rimosso un'indisponibilità dal vostro calendario.
+            </div>
+            
+            <div class="availability-details">
+              <div class="availability-title">Indisponibilità Rimossa</div>
+              
+              <div class="detail-row">
+                <span class="detail-label">👥 Gruppo:</span> ${groupName}
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">📅 Data:</span> ${formatDate(date)}
+              </div>
+              
+              <div class="detail-row">
+                <span class="detail-label">👤 Rimossa da:</span> ${adminName} (Amministratore)
+              </div>
+              
+              ${notes ? `
+                <div class="detail-row">
+                  <span class="detail-label">📝 Note originali:</span> ${notes}
+                </div>
+              ` : ''}
+            </div>
+            
+            <p>La data è ora nuovamente disponibile per eventi. Se avete domande su questa modifica, contattate l'amministratore.</p>
+          </div>
+          
+          <div class="footer">
+            <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+🗑️ INDISPONIBILITÀ RIMOSSA: ${groupName} - ${formatDate(date)}
+
+📢 NOTIFICA: Un amministratore ha rimosso un'indisponibilità dal vostro calendario.
+
+👥 Gruppo: ${groupName}
+📅 Data: ${formatDate(date)}
+👤 Rimossa da: ${adminName} (Amministratore)
+${notes ? `📝 Note originali: ${notes}` : ''}
+
+La data è ora nuovamente disponibile per eventi. 
+Se avete domande su questa modifica, contattate l'amministratore.
+
+Questa email è stata inviata automaticamente da ${this.APP_NAME}
+    `;
+
+    await this.sendEmail({
+      to: emails,
+      subject,
+      html,
+      text
+    });
+  }
 }
