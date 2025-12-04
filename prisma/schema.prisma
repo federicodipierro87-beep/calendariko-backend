@@ -43,6 +43,7 @@ model User {
   events              Event[]
   groupMemberships    UserGroup[]
   availabilities      Availability[]
+  dayAvailabilities   DayAvailability[] @relation("UserDayAvailability")
   notifications       Notification[]
   createdGroups       Group[]         @relation("GroupCreator")
   auditLogs           AuditLog[]
@@ -64,6 +65,7 @@ model Group {
   creator     User        @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   members     UserGroup[]
   events      Event[]
+  dayAvailabilities DayAvailability[] @relation("GroupDayAvailability")
 
   @@map("groups")
 }
@@ -117,6 +119,23 @@ model Availability {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("availability")
+}
+
+model DayAvailability {
+  id        String   @id @default(cuid())
+  userId    String?  // Opzionale per le indisponibilità di gruppo
+  groupId   String?  // Per le indisponibilità di gruppo
+  date      DateTime // Data specifica (es. 2025-12-05)
+  type      String   // BUSY, AVAILABLE
+  notes     String?  // Note opzionali
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relazioni
+  user      User?    @relation("UserDayAvailability", fields: [userId], references: [id], onDelete: Cascade)
+  group     Group?   @relation("GroupDayAvailability", fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("day_availability")
 }
 
 model Notification {
