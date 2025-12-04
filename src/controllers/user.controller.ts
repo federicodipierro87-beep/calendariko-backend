@@ -80,14 +80,7 @@ export class UserController {
           groupMemberships: {
             include: {
               group: {
-                select: {
-                  id: true,
-                  name: true,
-                  type: true,
-                  genre: true,
-                  description: true,
-                  createdAt: true,
-                  updatedAt: true,
+                include: {
                   // Include members per compatibilità con frontend
                   members: {
                     include: {
@@ -96,7 +89,8 @@ export class UserController {
                           id: true,
                           firstName: true,
                           lastName: true,
-                          email: true
+                          email: true,
+                          role: true
                         }
                       }
                     }
@@ -120,10 +114,22 @@ export class UserController {
         const group = membership.group;
         // Mappa 'members' a 'user_groups' per compatibilità con il frontend
         return {
-          ...group,
+          id: group.id,
+          name: group.name,
+          description: group.description,
+          type: group.type,
+          color: group.color,
+          createdAt: group.createdAt,
+          updatedAt: group.updatedAt,
           user_groups: group.members.map((member: any) => ({
             user_id: member.user.id,
-            user: member.user
+            user: {
+              id: member.user.id,
+              firstName: member.user.firstName,
+              lastName: member.user.lastName,
+              email: member.user.email,
+              role: member.user.role
+            }
           }))
         };
       });
