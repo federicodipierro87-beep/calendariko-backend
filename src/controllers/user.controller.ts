@@ -62,6 +62,84 @@ export class UserController {
     }
   }
 
+  static async getCurrentUserGroups(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Utente non autenticato'
+        });
+      }
+
+      // Recupera l'utente con le sue membership ai gruppi
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          groupMemberships: {
+            include: {
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  genre: true,
+                  description: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  // Include members per compatibilità con frontend
+                  members: {
+                    include: {
+                      user: {
+                        select: {
+                          id: true,
+                          firstName: true,
+                          lastName: true,
+                          email: true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Utente non trovato'
+        });
+      }
+
+      // Estrai i gruppi dalle membership e mappa la struttura per compatibilità frontend
+      const groups = user.groupMemberships.map((membership: any) => {
+        const group = membership.group;
+        // Mappa 'members' a 'user_groups' per compatibilità con il frontend
+        return {
+          ...group,
+          user_groups: group.members.map((member: any) => ({
+            user_id: member.user.id,
+            user: member.user
+          }))
+        };
+      });
+
+      console.log(`🔍 User ${user.email} requested their groups: ${groups.length} found`);
+      
+      res.status(200).json(groups);
+    } catch (error) {
+      console.error('Errore nel recupero dei gruppi dell\'utente:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore interno del server'
+      });
+    }
+  }
+
   static async getAllUsers(req: Request, res: Response) {
     try {
       // Recupera tutti gli utenti dal database
