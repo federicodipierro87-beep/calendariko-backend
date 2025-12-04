@@ -505,7 +505,6 @@ export class BackupService {
       const availabilities = await prisma.availability.findMany({
         include: {
           user: true,
-          group: true,
         }
       });
       
