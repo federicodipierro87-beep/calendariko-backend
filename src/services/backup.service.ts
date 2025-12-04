@@ -35,12 +35,23 @@ export class BackupService {
 
   // Crea un backup del database PostgreSQL
   static async createDatabaseBackup(adminId?: string, isManual: boolean = false): Promise<BackupInfo> {
-    await this.ensureBackupDir();
+    console.log('🔧 Iniziando creazione backup database...');
+    
+    try {
+      await this.ensureBackupDir();
+      console.log('📁 Directory backup verificata');
+    } catch (dirError) {
+      console.error('❌ Errore creazione directory backup:', dirError);
+      throw new Error(`Impossibile creare directory backup: ${dirError}`);
+    }
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
                      new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].split('.')[0];
     const filename = `calendariko_backup_${timestamp}.sql`;
     const fullPath = path.join(this.backupDir, filename);
+    
+    console.log(`📄 Nome file backup: ${filename}`);
+    console.log(`📍 Percorso completo: ${fullPath}`);
     
     const backup: BackupInfo = {
       id: `backup_${Date.now()}`,
@@ -58,58 +69,114 @@ export class BackupService {
       if (!dbUrl) {
         throw new Error('DATABASE_URL non configurata');
       }
+      console.log('🔗 DATABASE_URL presente');
 
       // Parse DATABASE_URL per ottenere i parametri di connessione
-      const url = new URL(dbUrl);
+      let url: URL;
+      try {
+        url = new URL(dbUrl);
+      } catch (urlError) {
+        throw new Error(`DATABASE_URL non valida: ${urlError}`);
+      }
+      
       const dbName = url.pathname.slice(1); // Rimuovi il '/' iniziale
       const host = url.hostname;
       const port = url.port || '5432';
       const username = url.username;
       const password = url.password;
 
-      // Comando pg_dump per creare il backup
-      const pgDumpCommand = `PGPASSWORD="${password}" pg_dump -h ${host} -p ${port} -U ${username} -d ${dbName} --clean --create --if-exists -f "${fullPath}"`;
-      
-      console.log(`Avvio backup database: ${filename}`);
-      
-      // Esegui pg_dump
-      const { stdout, stderr } = await execAsync(pgDumpCommand, {
-        env: { ...process.env, PGPASSWORD: password },
-        timeout: 300000 // 5 minuti timeout
-      });
+      console.log(`📊 Parametri connessione: host=${host}, port=${port}, db=${dbName}, user=${username}`);
 
-      if (stderr && !stderr.includes('NOTICE')) {
-        console.warn('Backup warnings:', stderr);
+      // Verifica che pg_dump sia disponibile, altrimenti usa fallback
+      let usePgDump = true;
+      try {
+        await execAsync('pg_dump --version');
+        console.log('✅ pg_dump disponibile');
+      } catch (pgDumpError) {
+        console.warn('⚠️ pg_dump non trovato:', pgDumpError);
+        console.log('🔄 Usando fallback: backup dati via Prisma');
+        usePgDump = false;
+      }
+
+      if (usePgDump) {
+        // Usa pg_dump per backup completo
+        const pgDumpCommand = `PGPASSWORD="${password}" pg_dump -h ${host} -p ${port} -U ${username} -d ${dbName} --clean --create --if-exists -f "${fullPath}"`;
+        
+        console.log(`🚀 Avvio backup database: ${filename}`);
+        console.log(`🔧 Comando: pg_dump -h ${host} -p ${port} -U ${username} -d ${dbName} --clean --create --if-exists -f "${fullPath}"`);
+        
+        // Esegui pg_dump
+        const { stdout, stderr } = await execAsync(pgDumpCommand, {
+          env: { ...process.env, PGPASSWORD: password },
+          timeout: 300000 // 5 minuti timeout
+        });
+
+        console.log('📤 pg_dump completato');
+        if (stdout) console.log('stdout:', stdout);
+        if (stderr) {
+          if (stderr.includes('NOTICE')) {
+            console.log('Notice messages:', stderr);
+          } else {
+            console.warn('⚠️ stderr:', stderr);
+          }
+        }
+      } else {
+        // Fallback: backup via Prisma (solo dati, non schema)
+        console.log(`🚀 Avvio backup fallback: ${filename}`);
+        await this.createPrismaBackup(fullPath);
+        console.log('📤 Backup Prisma completato');
       }
 
       // Verifica che il file sia stato creato e ottieni le dimensioni
-      const stats = await fs.stat(fullPath);
-      backup.size = stats.size;
-      backup.status = 'success';
+      try {
+        const stats = await fs.stat(fullPath);
+        backup.size = stats.size;
+        backup.status = 'success';
+        console.log(`📏 File backup creato: ${backup.size} bytes (${(backup.size / 1024 / 1024).toFixed(2)} MB)`);
+        
+        if (backup.size === 0) {
+          throw new Error('File backup vuoto');
+        }
+      } catch (statError) {
+        throw new Error(`File backup non creato correttamente: ${statError}`);
+      }
 
       console.log(`✅ Backup completato: ${filename} (${(backup.size / 1024 / 1024).toFixed(2)} MB)`);
 
       // Log audit se è un backup manuale
       if (isManual && adminId) {
-        await AuditService.logAction({
-          action: 'CREATE_DATABASE_BACKUP',
-          entity: 'SYSTEM',
-          adminId,
-          details: {
-            filename,
-            size: backup.size,
-            type: 'manual'
-          },
-          success: true
-        });
+        try {
+          await AuditService.logAction({
+            action: 'CREATE_DATABASE_BACKUP',
+            entity: 'SYSTEM',
+            adminId,
+            details: {
+              filename,
+              size: backup.size,
+              type: 'manual'
+            },
+            success: true
+          });
+          console.log('📝 Audit log registrato');
+        } catch (auditError) {
+          console.warn('⚠️ Errore audit log:', auditError);
+          // Non bloccare il backup per errori di audit
+        }
       }
 
       // Cleanup vecchi backup
-      await this.cleanupOldBackups();
+      try {
+        await this.cleanupOldBackups();
+        console.log('🧹 Cleanup completato');
+      } catch (cleanupError) {
+        console.warn('⚠️ Errore cleanup:', cleanupError);
+        // Non bloccare il backup per errori di cleanup
+      }
 
       return backup;
     } catch (error: any) {
       console.error('❌ Errore durante il backup:', error.message);
+      console.error('❌ Stack trace:', error.stack);
       backup.errorMessage = error.message;
       
       // Log audit dell'errore se è un backup manuale
@@ -218,16 +285,40 @@ export class BackupService {
         return { valid: false, error: 'File backup vuoto' };
       }
 
-      // Controllo contenuto: deve contenere comandi SQL validi
+      // Leggi contenuto file
       const content = await fs.readFile(backupPath, 'utf-8');
-      const hasCreateDatabase = content.includes('CREATE DATABASE');
-      const hasCreateTable = content.includes('CREATE TABLE');
       
-      if (!hasCreateTable) {
-        return { valid: false, error: 'Backup non contiene definizioni di tabelle' };
+      // Determina il tipo di backup
+      if (content.startsWith('{') && content.includes('"metadata"')) {
+        // Backup JSON (Prisma fallback)
+        try {
+          const backupData = JSON.parse(content);
+          
+          if (!backupData.metadata || !backupData.data) {
+            return { valid: false, error: 'Backup JSON non ha struttura valida' };
+          }
+          
+          if (!backupData.data.users || !Array.isArray(backupData.data.users)) {
+            return { valid: false, error: 'Backup JSON non contiene dati utenti validi' };
+          }
+          
+          console.log(`✅ Backup JSON verificato: ${backupData.counts?.users || 0} utenti`);
+          return { valid: true };
+          
+        } catch (jsonError) {
+          return { valid: false, error: 'Backup JSON malformato' };
+        }
+      } else {
+        // Backup SQL (pg_dump)
+        const hasCreateTable = content.includes('CREATE TABLE') || content.includes('CREATE SCHEMA');
+        
+        if (!hasCreateTable) {
+          return { valid: false, error: 'Backup SQL non contiene definizioni di tabelle' };
+        }
+        
+        console.log('✅ Backup SQL verificato');
+        return { valid: true };
       }
-
-      return { valid: true };
     } catch (error: any) {
       return { valid: false, error: error.message };
     }
@@ -377,6 +468,95 @@ export class BackupService {
       });
 
       throw error;
+    }
+  }
+
+  // Fallback: Backup via Prisma (solo dati, non schema completo)
+  private static async createPrismaBackup(filePath: string): Promise<void> {
+    console.log('🔄 Creando backup fallback via Prisma...');
+    
+    try {
+      // Recupera tutti i dati dal database
+      const users = await prisma.user.findMany({
+        include: {
+          groupMemberships: true,
+          events: true,
+          availabilities: true,
+          notifications: true,
+          createdGroups: true,
+          auditLogs: true,
+        }
+      });
+      
+      const groups = await prisma.group.findMany({
+        include: {
+          members: true,
+          events: true,
+        }
+      });
+      
+      const events = await prisma.event.findMany({
+        include: {
+          group: true,
+          user: true,
+        }
+      });
+      
+      const availabilities = await prisma.availability.findMany({
+        include: {
+          user: true,
+          group: true,
+        }
+      });
+      
+      const notifications = await prisma.notification.findMany({
+        include: {
+          user: true,
+        }
+      });
+      
+      const auditLogs = await prisma.auditLog.findMany({
+        include: {
+          admin: true,
+        }
+      });
+      
+      // Crea oggetto backup con tutti i dati
+      const backupData = {
+        metadata: {
+          version: '1.0',
+          createdAt: new Date().toISOString(),
+          type: 'prisma_fallback',
+          description: 'Backup dati via Prisma (fallback quando pg_dump non disponibile)'
+        },
+        data: {
+          users,
+          groups,
+          events,
+          availabilities,
+          notifications,
+          auditLogs,
+        },
+        counts: {
+          users: users.length,
+          groups: groups.length,
+          events: events.length,
+          availabilities: availabilities.length,
+          notifications: notifications.length,
+          auditLogs: auditLogs.length,
+        }
+      };
+      
+      // Scrivi il backup come JSON
+      const jsonData = JSON.stringify(backupData, null, 2);
+      await fs.writeFile(filePath, jsonData, 'utf8');
+      
+      console.log('✅ Backup Prisma creato con successo');
+      console.log(`📊 Dati salvati: ${backupData.counts.users} users, ${backupData.counts.groups} groups, ${backupData.counts.events} events`);
+      
+    } catch (error) {
+      console.error('❌ Errore backup Prisma:', error);
+      throw new Error(`Fallback backup failed: ${error}`);
     }
   }
 }

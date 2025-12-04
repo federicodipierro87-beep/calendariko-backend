@@ -250,6 +250,19 @@ export class BackupController {
 
       console.log(`🧪 Test sistema backup da admin: ${req.user.email}`);
       
+      // Verifica configurazione prima del test
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        res.status(500).json({
+          error: 'DATABASE_URL non configurata',
+          details: 'La variabile d\'ambiente DATABASE_URL è richiesta per i backup'
+        });
+        return;
+      }
+
+      console.log('📋 Configurazione DATABASE_URL presente');
+      console.log('🔧 Tentativo test backup...');
+      
       await SchedulerService.testBackup();
       
       res.status(200).json({
@@ -257,10 +270,12 @@ export class BackupController {
         message: 'Test del sistema di backup completato con successo'
       });
     } catch (error: any) {
-      console.error('Errore test backup:', error);
+      console.error('❌ Errore test backup:', error);
+      console.error('Stack trace:', error.stack);
       res.status(500).json({
         error: 'Errore durante il test del sistema di backup',
-        details: error.message
+        details: error.message,
+        suggestion: 'Verificare che pg_dump sia installato e accessibile, e che DATABASE_URL sia configurata correttamente'
       });
     }
   }
