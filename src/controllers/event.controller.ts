@@ -70,6 +70,7 @@ export class EventController {
         endTime,
         location,
         groupId,
+        status, // Aggiungi il campo status
         // Formato vecchio dal frontend
         event_type,
         date,
@@ -157,6 +158,7 @@ export class EventController {
           endTime: eventEndTime,
           location: eventLocation,
           groupId: eventGroupId,
+          status: status || 'PROPOSED', // Aggiungi il campo status
           fee: fee ? (typeof fee === 'string' ? parseInt(fee, 10) : Math.round(fee)) : null,
           contact_responsible: contact_responsible || null,
           userId: req.user!.id
@@ -229,6 +231,7 @@ export class EventController {
       if (eventData.description) updateData.description = eventData.description;
       if (eventData.location || eventData.venue_name) updateData.location = eventData.location || eventData.venue_name;
       if (eventData.groupId || eventData.group_id) updateData.groupId = eventData.groupId || eventData.group_id;
+      if (eventData.status) updateData.status = eventData.status; // Aggiungi il campo status
       
       // Gestisce fee (cachet) - può essere 0 quindi controllo !== undefined
       if (eventData.fee !== undefined) {
