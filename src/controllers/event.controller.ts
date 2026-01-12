@@ -321,18 +321,31 @@ export class EventController {
       });
       
       console.log(`✅ [Railway DB] Evento ${id} aggiornato con successo`);
-      
-      // Invia email di notifica per la modifica
+
+      // Verifica se lo status è cambiato a CONFIRMED (da qualsiasi altro stato)
+      const statusChangedToConfirmed =
+        existingEvent.status !== 'CONFIRMED' &&
+        updatedEvent.status === 'CONFIRMED';
+
+      // Invia email di notifica appropriata
       try {
-        console.log('📧 Tentativo di invio email per evento modificato');
-        await EventController.sendEventUpdateNotification(updatedEvent);
-        console.log('✅ Email di modifica inviate con successo');
+        if (statusChangedToConfirmed) {
+          // Email speciale di conferma con header verde
+          console.log('📧 Tentativo di invio email di CONFERMA evento');
+          await EventController.sendEventConfirmationNotification(updatedEvent);
+          console.log('✅ Email di conferma evento inviata con successo');
+        } else {
+          // Email normale di modifica
+          console.log('📧 Tentativo di invio email per evento modificato');
+          await EventController.sendEventUpdateNotification(updatedEvent);
+          console.log('✅ Email di modifica inviate con successo');
+        }
       } catch (emailError: any) {
-        console.error('⚠️ Errore nell\'invio email per modifica evento:', emailError);
+        console.error('⚠️ Errore nell\'invio email per evento:', emailError);
         console.error('⚠️ Stack trace:', emailError.stack);
         // Non interrompe l'aggiornamento dell'evento se l'email fallisce
       }
-      
+
       res.status(200).json(updatedEvent);
       
     } catch (error: any) {
@@ -540,6 +553,76 @@ export class EventController {
 
     } catch (error) {
       console.error('❌ Errore nell\'invio email modifica evento:', error);
+      throw error;
+    }
+  }
+
+  private static async sendEventConfirmationNotification(event: any): Promise<void> {
+    try {
+      console.log('📧 Preparazione invio email di CONFERMA per evento:', event.title);
+
+      // Lista email destinatari
+      const recipientEmails: string[] = [];
+
+      // Aggiungi l'email dell'organizzatore
+      if (event.user && event.user.email) {
+        recipientEmails.push(event.user.email);
+        console.log('📧 Aggiunto organizzatore:', event.user.email);
+      }
+
+      // Se l'evento ha un gruppo, aggiungi tutti i membri del gruppo
+      if (event.groupId) {
+        const groupWithMembers = await prisma.group.findUnique({
+          where: { id: event.groupId },
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: { email: true, firstName: true, lastName: true }
+                }
+              }
+            }
+          }
+        });
+
+        if (groupWithMembers && groupWithMembers.members) {
+          for (const member of groupWithMembers.members) {
+            if (member.user.email && !recipientEmails.includes(member.user.email)) {
+              recipientEmails.push(member.user.email);
+              console.log('📧 Aggiunto membro gruppo:', member.user.email);
+            }
+          }
+        }
+      }
+
+      // Se non ci sono destinatari, non inviare email
+      if (recipientEmails.length === 0) {
+        console.log('⚠️ Nessun destinatario trovato per la conferma evento');
+        return;
+      }
+
+      console.log(`📧 Invio email conferma a ${recipientEmails.length} destinatari:`, recipientEmails);
+
+      // Prepara i dati per l'email
+      const eventData = {
+        eventTitle: event.title,
+        eventDescription: event.description || undefined,
+        eventLocation: event.location || undefined,
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+        groupName: event.group?.name || undefined,
+        organizerName: event.user ? `${event.user.firstName} ${event.user.lastName}` : undefined,
+        fee: event.fee || undefined,
+        contactResponsible: event.contact_responsible || undefined,
+        notes: event.description || undefined
+      };
+
+      // Invia la email di conferma
+      await EmailService.sendEventConfirmationEmail(recipientEmails, eventData);
+      console.log('✅ Email conferma evento inviata con successo');
+
+    } catch (error) {
+      console.error('❌ Errore nell\'invio email conferma evento:', error);
       throw error;
     }
   }
