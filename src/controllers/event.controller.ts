@@ -8,11 +8,33 @@ const prisma = new PrismaClient();
 export class EventController {
   static async getAllEvents(req: AuthenticatedRequest, res: Response) {
     try {
-      // Gli admin possono vedere tutti gli eventi, gli altri utenti solo i propri
-      const whereClause = req.user?.role === 'ADMIN' 
-        ? {} // Admin: nessun filtro, mostra tutti gli eventi
-        : { userId: req.user?.id }; // Altri utenti: solo i propri eventi
-      
+      let whereClause: any;
+
+      if (req.user?.role === 'ADMIN') {
+        // Admin: nessun filtro, mostra tutti gli eventi
+        whereClause = {};
+      } else {
+        // Utente normale: eventi propri OPPURE eventi dei gruppi di cui è membro
+        // Prima recupera i gruppi di cui l'utente è membro
+        const userGroups = await prisma.userGroup.findMany({
+          where: { userId: req.user?.id },
+          select: { groupId: true }
+        });
+        const userGroupIds = userGroups.map(ug => ug.groupId);
+
+        console.log(`👤 Utente ${req.user?.email} è membro di ${userGroupIds.length} gruppi:`, userGroupIds);
+
+        // Filtra eventi dove:
+        // - userId è l'utente corrente (eventi creati dall'utente)
+        // - OPPURE groupId è uno dei gruppi di cui l'utente è membro
+        whereClause = {
+          OR: [
+            { userId: req.user?.id }, // Eventi creati dall'utente
+            { groupId: { in: userGroupIds } } // Eventi assegnati ai gruppi dell'utente
+          ]
+        };
+      }
+
       const events = await prisma.event.findMany({
         where: whereClause,
         include: {
@@ -25,7 +47,7 @@ export class EventController {
         },
         orderBy: { startTime: 'asc' }
       });
-      
+
       console.log(`📅 [Railway DB] Recuperati ${events.length} eventi per utente ${req.user?.role}: ${req.user?.email}`);
       res.status(200).json(events);
     } catch (error: any) {
