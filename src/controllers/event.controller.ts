@@ -84,6 +84,9 @@ export class EventController {
 
   static async createEvent(req: AuthenticatedRequest, res: Response) {
     try {
+      // Valori validi per EventStatus secondo lo schema Prisma
+      const validStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED'];
+
       // Gestisce sia il formato nuovo (Prisma) che quello vecchio (frontend esistente)
       const {
         title,
@@ -92,7 +95,7 @@ export class EventController {
         endTime,
         location,
         groupId,
-        status, // Aggiungi il campo status
+        status, // Campo status dal frontend
         // Formato vecchio dal frontend
         event_type,
         date,
@@ -171,6 +174,10 @@ export class EventController {
         endTimeLocal: eventEndTime.toLocaleString('it-IT', { timeZone: 'Europe/Rome' })
       });
       
+      // Valida e normalizza lo status - usa PENDING come default
+      const eventStatus = validStatuses.includes(status) ? status : 'PENDING';
+      console.log(`📋 Status ricevuto: "${status}" -> Status utilizzato: "${eventStatus}"`);
+
       // Crea un nuovo evento nel database
       const newEvent = await prisma.event.create({
         data: {
@@ -180,7 +187,7 @@ export class EventController {
           endTime: eventEndTime,
           location: eventLocation,
           groupId: eventGroupId,
-          status: status || 'PROPOSED', // Aggiungi il campo status
+          status: eventStatus,
           fee: fee ? (typeof fee === 'string' ? parseInt(fee, 10) : Math.round(fee)) : null,
           contact_responsible: contact_responsible || null,
           userId: req.user!.id
@@ -227,17 +234,20 @@ export class EventController {
 
   static async updateEvent(req: Request, res: Response) {
     try {
+      // Valori validi per EventStatus secondo lo schema Prisma
+      const validStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED'];
+
       const { id } = req.params;
       const eventData = req.body;
-      
+
       console.log(`📝 [Railway DB] Aggiornamento evento ID: ${id}`);
       console.log('📝 Dati ricevuti:', eventData);
-      
+
       // Verifica se l'evento esiste
       const existingEvent = await prisma.event.findUnique({
         where: { id }
       });
-      
+
       if (!existingEvent) {
         console.log(`❌ Evento ${id} non trovato nel database`);
         return res.status(404).json({
@@ -245,15 +255,23 @@ export class EventController {
           message: 'Evento non trovato'
         });
       }
-      
+
       // Normalizza i dati per l'aggiornamento (supporta sia formato nuovo che vecchio)
       const updateData: any = {};
-      
+
       if (eventData.title) updateData.title = eventData.title;
       if (eventData.description) updateData.description = eventData.description;
       if (eventData.location || eventData.venue_name) updateData.location = eventData.location || eventData.venue_name;
       if (eventData.groupId || eventData.group_id) updateData.groupId = eventData.groupId || eventData.group_id;
-      if (eventData.status) updateData.status = eventData.status; // Aggiungi il campo status
+
+      // Valida lo status - accetta solo valori validi
+      if (eventData.status) {
+        if (validStatuses.includes(eventData.status)) {
+          updateData.status = eventData.status;
+        } else {
+          console.log(`⚠️ Status non valido ricevuto: "${eventData.status}" - ignorato`);
+        }
+      }
       
       // Gestisce fee (cachet) - può essere 0 quindi controllo !== undefined
       if (eventData.fee !== undefined) {
