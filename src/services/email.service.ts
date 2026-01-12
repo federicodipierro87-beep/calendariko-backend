@@ -881,4 +881,146 @@ ${this.getCalendarButtonText()}
       text
     });
   }
+
+  static async sendEventBackToOptionedEmail(
+    emails: string[],
+    eventData: EventNotificationData
+  ): Promise<void> {
+    const formatDate = (date: Date): string => {
+      return date.toLocaleString('it-IT', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Rome'
+      });
+    };
+
+    const subject = `⚠️ Data Tornata Opzionata: ${eventData.eventTitle}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #f59e0b; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+          .event-details { background: white; padding: 15px; border-radius: 6px; margin: 15px 0; }
+          .event-title { font-size: 24px; font-weight: bold; color: #f59e0b; margin-bottom: 10px; }
+          .detail-row { margin: 8px 0; }
+          .detail-label { font-weight: bold; color: #6b7280; }
+          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px; }
+          .optioned-notice { background: #fef3c7; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #f59e0b; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⚠️ ${this.APP_NAME}</h1>
+            <p>La data è tornata opzionata</p>
+          </div>
+
+          <div class="content">
+            <div class="optioned-notice">
+              <strong>📋 ATTENZIONE:</strong> Questo evento è tornato allo stato "opzionato" ed è in attesa di conferma definitiva.
+            </div>
+
+            <div class="event-details">
+              <div class="event-title">${eventData.eventTitle}</div>
+
+              ${eventData.eventDescription ? `
+                <div class="detail-row">
+                  <span class="detail-label">Descrizione:</span> ${eventData.eventDescription}
+                </div>
+              ` : ''}
+
+              <div class="detail-row">
+                <span class="detail-label">📅 Inizio:</span> ${formatDate(eventData.startTime)}
+              </div>
+
+              <div class="detail-row">
+                <span class="detail-label">🕐 Fine:</span> ${formatDate(eventData.endTime)}
+              </div>
+
+              ${eventData.eventLocation ? `
+                <div class="detail-row">
+                  <span class="detail-label">📍 Luogo:</span> ${eventData.eventLocation}
+                </div>
+              ` : ''}
+
+              ${eventData.groupName ? `
+                <div class="detail-row">
+                  <span class="detail-label">👥 Gruppo:</span> ${eventData.groupName}
+                </div>
+              ` : ''}
+
+              ${eventData.organizerName ? `
+                <div class="detail-row">
+                  <span class="detail-label">👤 Organizzatore:</span> ${eventData.organizerName}
+                </div>
+              ` : ''}
+
+              ${eventData.fee !== undefined && eventData.fee !== null ? `
+                <div class="detail-row">
+                  <span class="detail-label">💰 Cachet:</span> €${eventData.fee}
+                </div>
+              ` : ''}
+
+              ${eventData.contactResponsible ? `
+                <div class="detail-row">
+                  <span class="detail-label">📞 Contatto responsabile:</span> ${eventData.contactResponsible}
+                </div>
+              ` : ''}
+
+              ${eventData.notes ? `
+                <div class="detail-row">
+                  <span class="detail-label">📝 Note:</span> ${eventData.notes}
+                </div>
+              ` : ''}
+            </div>
+
+            <p>La data non è più confermata e richiede una nuova conferma. Accedi alla piattaforma per i dettagli.</p>
+
+            ${this.getCalendarButtonHtml()}
+          </div>
+
+          <div class="footer">
+            <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+⚠️ DATA TORNATA OPZIONATA: ${eventData.eventTitle}
+
+📋 ATTENZIONE: Questo evento è tornato allo stato "opzionato" ed è in attesa di conferma definitiva.
+
+${eventData.eventDescription ? `Descrizione: ${eventData.eventDescription}\n` : ''}
+📅 Inizio: ${formatDate(eventData.startTime)}
+🕐 Fine: ${formatDate(eventData.endTime)}
+${eventData.eventLocation ? `📍 Luogo: ${eventData.eventLocation}\n` : ''}
+${eventData.groupName ? `👥 Gruppo: ${eventData.groupName}\n` : ''}
+${eventData.organizerName ? `👤 Organizzatore: ${eventData.organizerName}\n` : ''}
+${eventData.fee !== undefined && eventData.fee !== null ? `💰 Cachet: €${eventData.fee}\n` : ''}
+${eventData.contactResponsible ? `📞 Contatto responsabile: ${eventData.contactResponsible}\n` : ''}
+${eventData.notes ? `📝 Note: ${eventData.notes}\n` : ''}
+
+La data non è più confermata e richiede una nuova conferma.
+${this.getCalendarButtonText()}
+    `;
+
+    await this.sendEmail({
+      to: emails,
+      subject,
+      html,
+      text
+    });
+  }
 }
