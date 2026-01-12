@@ -27,6 +27,35 @@ export interface EventNotificationData {
 export class EmailService {
   private static readonly FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@easysolution-dp.com';
   private static readonly APP_NAME = 'Calendariko';
+  private static readonly APP_URL = process.env.FRONTEND_URL || 'https://calendariko.netlify.app';
+
+  // Stile del pulsante CTA per le email
+  private static readonly CTA_BUTTON_STYLE = `
+    display: inline-block;
+    background: #4f46e5;
+    color: white !important;
+    padding: 12px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    margin: 20px 0;
+  `;
+
+  // Genera il blocco HTML del pulsante per accedere al calendario
+  private static getCalendarButtonHtml(): string {
+    return `
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="${this.APP_URL}" style="${this.CTA_BUTTON_STYLE}">
+          📅 Vai al Calendario
+        </a>
+      </div>
+    `;
+  }
+
+  // Genera il testo per la versione plain text delle email
+  private static getCalendarButtonText(): string {
+    return `\n📅 Vai al Calendario: ${this.APP_URL}\n`;
+  }
 
   static async sendEmail(options: EmailOptions): Promise<void> {
     try {
@@ -153,8 +182,10 @@ export class EmailService {
             </div>
             
             <p>Accedi alla piattaforma per visualizzare tutti i dettagli e gestire la tua agenda.</p>
+
+            ${this.getCalendarButtonHtml()}
           </div>
-          
+
           <div class="footer">
             <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
           </div>
@@ -172,8 +203,7 @@ ${eventData.eventDescription ? `Descrizione: ${eventData.eventDescription}\n` : 
 ${eventData.eventLocation ? `📍 Luogo: ${eventData.eventLocation}\n` : ''}
 ${eventData.groupName ? `👥 Gruppo: ${eventData.groupName}\n` : ''}
 ${eventData.organizerName ? `👤 Organizzatore: ${eventData.organizerName}\n` : ''}
-
-Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
+${this.getCalendarButtonText()}
     `;
 
     await this.sendEmail({
@@ -230,8 +260,10 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli.
               <p><strong>Nota:</strong> Questo link scade tra 24 ore.</p>
               <p>Se non hai richiesto questa registrazione, ignora questa email.</p>
             </div>
+
+            ${this.getCalendarButtonHtml()}
           </div>
-          
+
           <div class="footer">
             <p>© 2024 ${this.APP_NAME} - Gestione Eventi per Musicisti</p>
             <p>Questa email è stata inviata automaticamente dal sistema</p>
@@ -255,7 +287,7 @@ Dopo la conferma, un amministratore ti assegnerà al gruppo appropriato.
 
 Nota: Questo link scade tra 24 ore.
 Se non hai richiesto questa registrazione, ignora questa email.
-
+${this.getCalendarButtonText()}
 © 2024 ${this.APP_NAME} - Gestione Eventi per Musicisti
     `;
 
@@ -294,8 +326,10 @@ Se non hai richiesto questa registrazione, ignora questa email.
             <p>Benvenuto nella piattaforma di gestione eventi per band e DJ!</p>
             <p>Un amministratore ti assegnerà presto al gruppo appropriato.</p>
             <p>Riceverai una notifica via email quando il tuo account sarà attivo e potrai iniziare a usare tutte le funzionalità della piattaforma.</p>
+
+            ${this.getCalendarButtonHtml()}
           </div>
-          
+
           <div class="footer">
             <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
           </div>
@@ -312,6 +346,7 @@ Ciao ${firstName}!
 Benvenuto nella piattaforma di gestione eventi per band e DJ!
 Un amministratore ti assegnerà presto al gruppo appropriato.
 Riceverai una notifica via email quando il tuo account sarà attivo.
+${this.getCalendarButtonText()}
     `;
 
     await this.sendEmail({
@@ -425,8 +460,10 @@ Riceverai una notifica via email quando il tuo account sarà attivo.
             </div>
             
             <p>Accedi alla piattaforma per visualizzare tutti i dettagli aggiornati.</p>
+
+            ${this.getCalendarButtonHtml()}
           </div>
-          
+
           <div class="footer">
             <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
           </div>
@@ -449,8 +486,7 @@ ${eventData.organizerName ? `👤 Organizzatore: ${eventData.organizerName}\\n` 
 ${eventData.fee !== undefined && eventData.fee !== null ? `💰 Cachet: €${eventData.fee}\\n` : ''}
 ${eventData.contactResponsible ? `📞 Contatto responsabile: ${eventData.contactResponsible}\\n` : ''}
 ${eventData.notes ? `📝 Note: ${eventData.notes}\\n` : ''}
-
-Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli aggiornati.
+${this.getCalendarButtonText()}
     `;
 
     await this.sendEmail({
@@ -560,8 +596,10 @@ Accedi alla piattaforma ${this.APP_NAME} per visualizzare tutti i dettagli aggio
             </div>
             
             <p>Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.</p>
+
+            ${this.getCalendarButtonHtml()}
           </div>
-          
+
           <div class="footer">
             <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
           </div>
@@ -585,6 +623,7 @@ ${eventData.contactResponsible ? `📞 Contatto responsabile: ${eventData.contac
 ${eventData.notes ? `📝 Note: ${eventData.notes}\\n` : ''}
 
 Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.
+${this.getCalendarButtonText()}
     `;
 
     await this.sendEmail({
@@ -666,8 +705,10 @@ Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.
             </div>
             
             <p>La data è ora nuovamente disponibile per eventi. Se avete domande su questa modifica, contattate l'amministratore.</p>
+
+            ${this.getCalendarButtonHtml()}
           </div>
-          
+
           <div class="footer">
             <p>Questa email è stata inviata automaticamente da ${this.APP_NAME}</p>
           </div>
@@ -686,10 +727,9 @@ Se hai domande sulla cancellazione di questo evento, contatta l'organizzatore.
 👤 Rimossa da: ${adminName} (Amministratore)
 ${notes ? `📝 Note originali: ${notes}` : ''}
 
-La data è ora nuovamente disponibile per eventi. 
+La data è ora nuovamente disponibile per eventi.
 Se avete domande su questa modifica, contattate l'amministratore.
-
-Questa email è stata inviata automaticamente da ${this.APP_NAME}
+${this.getCalendarButtonText()}
     `;
 
     await this.sendEmail({
